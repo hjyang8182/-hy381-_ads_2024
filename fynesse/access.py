@@ -1,6 +1,8 @@
 from .config import *
 import requests 
 import pymysql
+import yaml
+from ipywidgets import interact_manual, Text, Password
 
 """These are the types of import we might expect in this file
 import httplib2
@@ -76,3 +78,15 @@ def housing_upload_join_data(conn, year):
   cur.execute(f"LOAD DATA LOCAL INFILE '" + csv_file_path + "' INTO TABLE `prices_coordinates_data` FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED by '\"' LINES STARTING BY '' TERMINATED BY '\n';")
   print('Data stored for year: ' + str(year))
   conn.commit()
+
+@interact_manual(username=Text(description="Username:"),
+                password=Password(description="Password:"),
+                url=Text(description="URL:"),
+                port=Text(description="Port:"))
+def write_credentials(username, password, url, port):
+    with open("credentials.yaml", "w") as file:
+        credentials_dict = {'username': username,
+                           'password': password,
+                           'url': url,
+                           'port': port}
+        yaml.dump(credentials_dict, file)
