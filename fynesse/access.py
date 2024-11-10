@@ -64,7 +64,7 @@ def housing_upload_join_data(conn, year):
 
   cur = conn.cursor()
   print('Selecting data for year: ' + str(year))
-  cur.execute(f'SELECT pp.price, pp.date_of_transfer, po.postcode, pp.property_type, pp.new_build_flag, pp.tenure_type, pp.locality, pp.town_city, pp.district, pp.county, po.country, po.latitude, po.longitude FROM (SELECT price, date_of_transfer, postcode, property_type, new_build_flag, tenure_type, locality, town_city, district, county FROM pp_data WHERE date_of_transfer BETWEEN "' + start_date + '" AND "' + end_date + '") AS pp INNER JOIN postcode_data AS po ON pp.postcode = po.postcode')
+  cur.execute(f'SELECT pp.price, pp.date_of_transfer, po.postcode, pp.property_type, pp.new_build_flag, pp.tenure_type, pp.locality, pp.town_city, pp.district, pp.county, po.country, po.latitude, po.longitude, pp.primary_addressable_object_name, pp.secondary_addressable_object_name, pp.street, pp.locality, pp.town_city, pp.district, pp.county FROM (SELECT price, date_of_transfer, postcode, property_type, new_build_flag, tenure_type, primary_addressable_object_name, secondary_addressable_object_name, street, locality, town_city, district, county FROM pp_data WHERE date_of_transfer BETWEEN "' + start_date + '" AND "' + end_date + '") AS pp INNER JOIN postcode_data AS po ON pp.postcode = po.postcode')
   rows = cur.fetchall()
 
   csv_file_path = 'output_file.csv'
@@ -78,15 +78,4 @@ def housing_upload_join_data(conn, year):
   cur.execute(f"LOAD DATA LOCAL INFILE '" + csv_file_path + "' INTO TABLE `prices_coordinates_data` FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED by '\"' LINES STARTING BY '' TERMINATED BY '\n';")
   print('Data stored for year: ' + str(year))
   conn.commit()
-
-@interact_manual(username=Text(description="Username:"),
-                password=Password(description="Password:"),
-                url=Text(description="URL:"),
-                port=Text(description="Port:"))
-def write_credentials(username, password, url, port):
-    with open("credentials.yaml", "w") as file:
-        credentials_dict = {'username': username,
-                           'password': password,
-                           'url': url,
-                           'port': port}
-        yaml.dump(credentials_dict, file)
+  
