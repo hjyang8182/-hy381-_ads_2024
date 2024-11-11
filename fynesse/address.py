@@ -98,7 +98,7 @@ def plot_buildings_near_coordinates(place_name, latitude: float, longitude: floa
     west = longitude - box_height/2
 
     addr_columns = ["addr:housenumber","addr:street", "addr:postcode"]
-    pois = get_poi_gdf(latitude, longitude, "building: True")
+    pois = get_poi_gdf(latitude, longitude, {"building": True})
 
     building_addr = pois[pois[addr_columns].notna().all(axis = 1)]
     building_no_addr = pois[pois[addr_columns].isna().any(axis = 1)]
@@ -122,7 +122,7 @@ def join_prices_coordinates_osm_data(conn, latitude, longitude, distance_km = 1)
     price_coordinates_data['street'] = price_coordinates_data['street'].str.lower()
     price_coordinates_data['primary_addressable_object_name'] = price_coordinates_data['primary_addressable_object_name'].str.lower()
 
-    pois = get_poi_gdf(latitude, longitude, "building: True")
+    pois = get_poi_gdf(latitude, longitude, {"building": True})
     addr_columns = ["addr:housenumber","addr:street", "addr:postcode"]
     building_addr = pois[pois[addr_columns].notna().all(axis = 1)]
     building_no_addr = pois[pois[addr_columns].isna().any(axis = 1)]
