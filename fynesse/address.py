@@ -108,7 +108,7 @@ def plot_buildings_near_coordinates(place_name, latitude: float, longitude: floa
     building_no_addr.plot(ax=ax, color = "red", alpha=1 ,markersize=10) 
 
 def join_prices_coordinates_osm_data(conn, latitude, longitude, distance_km = 1): 
-    price_coordinates_data = get_prices_coordinates_from_coords(conn, longitude, latitude, distance_km)
+    price_coordinates_data = get_prices_coordinates_from_coords(conn, latitude, longitude, distance_km)
     price_coordinates_data['street'] = price_coordinates_data['street'].str.lower()
     price_coordinates_data['primary_addressable_object_name'] = price_coordinates_data['primary_addressable_object_name'].str.lower()
 
@@ -141,8 +141,6 @@ def find_correlations_with_house_prices(merged_df, latitude, longitude):
     gdf = gpd.GeoDataFrame(merged_df, crs = "ESPG:3395", geometry = merged_df['geometry'])
     city_center = (latitude, longitude)
     gdf['distance_to_center'] = list(map(lambda x: geodesic(x, city_center).kilometers, list(zip(gdf['latitude'], gdf['longitude']))))
-    prices = gdf['price'].values
-    areas = gdf['area'].values  
     features = ['price', 'area']
     feature_df = {feature: gdf[feature].values.tolist() for feature in features}
     feature_df = pd.DataFrame(feature_df)
