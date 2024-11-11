@@ -18,12 +18,10 @@ import scipy.stats"""
 import matplotlib as plt
 import numpy as np
 import osmnx as ox
-import fynesse.access
 import pandas as pd
 from shapely.geometry import Point, Polygon
 import pymysql
 
-curr = access.create_connection()
 def count_pois_near_coordinates(latitude: float, longitude: float, tags: dict, distance_km: float = 1.0) -> dict:
     """
     Count Points of Interest (POIs) near a given pair of coordinates within a specified distance.
