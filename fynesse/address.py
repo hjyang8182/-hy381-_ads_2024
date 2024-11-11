@@ -18,7 +18,7 @@ import scipy.stats"""
 import matplotlib as plt
 import numpy as np
 import osmnx as ox
-import access
+import fynesse.access
 import pandas as pd
 from shapely.geometry import Point, Polygon
 import pymysql
