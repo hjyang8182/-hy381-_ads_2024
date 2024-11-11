@@ -15,7 +15,7 @@ import tensorflow as tf
 import scipy.stats"""
 
 """Address a particular question that arises from the data"""
-import matplotlib as plt
+import matplotlib.pyplot as plt
 import numpy as np
 import osmnx as ox
 import pandas as pd
