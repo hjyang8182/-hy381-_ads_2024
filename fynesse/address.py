@@ -21,6 +21,8 @@ import osmnx as ox
 import pandas as pd
 from shapely.geometry import Point, Polygon
 import pymysql
+import geopandas as gpd
+import seaborn as sns
 
 def count_pois_near_coordinates(latitude: float, longitude: float, tags: dict, distance_km: float = 1.0) -> dict:
     """
@@ -61,20 +63,6 @@ def get_poi_gdf(latitude, longitude, tags, distance_km = 1):
     west = longitude - box_height/2
     pois = ox.geometries_from_bbox(north, south, east, west, tags)
     return pois 
-
-
-def find_prices_within_box(conn, longitude, latitude, distance_km = 1):
-    cur = conn.cursor()
-    box_width = 1 / 111
-    box_height = 1 / (111 * np.cos(np.radians(latitude)))
-    north = latitude + box_width/2
-    south = latitude - box_width/2
-    east = longitude + box_height/2
-    west = longitude - box_height/2
-    print((north, south, east, west))
-    cur.execute(f"SELECT * FROM `prices_coordinates_data` where latitude BETWEEN {south} and {north} and longitude BETWEEN {west} and {east} and date_of_transfer >= '2020-01-01'")
-    cam_houses = cur.fetchall()
-    return cam_houses
 
 def get_prices_coordinates_from_coords(conn, latitude, longitude, distance_km = 1): 
     cur = conn.cursor(pymysql.cursors.DictCursor)
@@ -123,6 +111,7 @@ def join_prices_coordinates_osm_data(conn, latitude, longitude, distance_km = 1)
     price_coordinates_data['primary_addressable_object_name'] = price_coordinates_data['primary_addressable_object_name'].str.lower()
 
     pois = get_poi_gdf(latitude, longitude, {"building": True})
+    pois['area'] = pois.geometry.to_crs(epsg=3395).area
     addr_columns = ["addr:housenumber","addr:street", "addr:postcode"]
     building_addr = pois[pois[addr_columns].notna().all(axis = 1)]
     building_no_addr = pois[pois[addr_columns].isna().any(axis = 1)]
@@ -142,3 +131,13 @@ def join_prices_coordinates_osm_data(conn, latitude, longitude, distance_km = 1)
     merged_alt_df = pd.merge(buildings_not_merged_df, pois_df, on = 'osmid')
     full_merged = pd.concat([merged_on_addr, merged_alt_df])
     return full_merged
+
+def find_correlations_with_house_prices(merged_df):
+    gdf = gpd.GeoDataFrame(merged_df, crs = "ESPG:3395", geometry = merged_df['geometry'])
+    prices = gdf['price'].values
+    areas = gdf['area'].values  
+    features = ['price', 'area']
+    feature_df = {feature: gdf[feature].values.tolist() for feature in features}
+    feature_df = pd.DataFrame(feature_df)
+    corr_matrix = feature_df.corr()
+    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5)
