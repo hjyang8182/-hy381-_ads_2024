@@ -86,7 +86,7 @@ def get_prices_coordinates_from_coords(conn, latitude, longitude, distance_km = 
     west = longitude - box_height/2
     cur.execute(f"SELECT * FROM `prices_coordinates_data` where latitude BETWEEN {south} and {north} and longitude BETWEEN {west} and {east} and date_of_transfer >= '2020-01-01'")
     price_coordinates_data = cur.fetchall()
-    return price_coordinates_data
+    return pd.DataFrame(price_coordinates_data)
 
 def plot_buildings_near_coordinates(place_name, latitude: float, longitude: float, distance_km: float = 1.0):
     box_width = distance_km / 111
