@@ -23,6 +23,7 @@ from shapely.geometry import Point, Polygon
 import pymysql
 import geopandas as gpd
 import seaborn as sns
+from geopy.distance import geodesic
 
 def count_pois_near_coordinates(latitude: float, longitude: float, tags: dict, distance_km: float = 1.0) -> dict:
     """
@@ -62,12 +63,13 @@ def get_poi_gdf(latitude, longitude, tags, distance_km = 1):
     east = longitude + box_height/2
     west = longitude - box_height/2
     pois = ox.geometries_from_bbox(north, south, east, west, tags)
+    pois['area'] = pois.geometry.to_crs(epsg=3395).area
     return pois 
 
 def get_prices_coordinates_from_coords(conn, latitude, longitude, distance_km = 1): 
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    box_width = 1 / 111
-    box_height = 1 / (111 * np.cos(np.radians(latitude)))
+    box_width = distance_km / 111
+    box_height = distance_km / (111 * np.cos(np.radians(latitude)))
     north = latitude + box_width/2
     south = latitude - box_width/2
     east = longitude + box_height/2
@@ -111,12 +113,15 @@ def join_prices_coordinates_osm_data(conn, latitude, longitude, distance_km = 1)
     price_coordinates_data['primary_addressable_object_name'] = price_coordinates_data['primary_addressable_object_name'].str.lower()
 
     pois = get_poi_gdf(latitude, longitude, {"building": True})
-    pois['area'] = pois.geometry.to_crs(epsg=3395).area
     addr_columns = ["addr:housenumber","addr:street", "addr:postcode"]
+    
     building_addr = pois[pois[addr_columns].notna().all(axis = 1)]
-    building_no_addr = pois[pois[addr_columns].isna().any(axis = 1)]
+    building_addr['addr:street'] = building_addr['addr:street'].str.lower()
+    building_addr['addr:housenumber'] = building_addr['addr:housenumber'].str.lower()
     building_addr_df = pd.DataFrame(building_addr)
-
+    
+    building_no_addr = pois[pois[addr_columns].isna().any(axis = 1)]
+    
     merged_on_addr = pd.merge(price_coordinates_data, building_addr_df, left_on = ['street', 'primary_addressable_object_name'], right_on = ['addr:street', 'addr:housenumber'], how = 'inner')
     buildings_not_merged_df = price_coordinates_data[~price_coordinates_data.index.isin(merged_on_addr.index)]
     pois_df = pd.DataFrame(pois)
@@ -132,8 +137,10 @@ def join_prices_coordinates_osm_data(conn, latitude, longitude, distance_km = 1)
     full_merged = pd.concat([merged_on_addr, merged_alt_df])
     return full_merged
 
-def find_correlations_with_house_prices(merged_df):
+def find_correlations_with_house_prices(merged_df, latitude, longitude):
     gdf = gpd.GeoDataFrame(merged_df, crs = "ESPG:3395", geometry = merged_df['geometry'])
+    city_center = (latitude, longitude)
+    gdf['distance_to_center'] = list(map(lambda x: geodesic(x, city_center).kilometers, list(zip(gdf['latitude'], gdf['longitude']))))
     prices = gdf['price'].values
     areas = gdf['area'].values  
     features = ['price', 'area']
