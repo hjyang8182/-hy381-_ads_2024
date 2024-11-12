@@ -74,7 +74,7 @@ def get_prices_coordinates_from_coords(conn, latitude, longitude, distance_km = 
     south = latitude - box_width/2
     east = longitude + box_height/2
     west = longitude - box_height/2
-    query = f"SELECT * FROM `prices_coordinates_data` where latitude BETWEEN {south} and {north} and longitude BETWEEN {west} and {east} and date_of_transfer >= '2020-01-01'")
+    query = f"SELECT * FROM `prices_coordinates_data` where latitude BETWEEN {south} and {north} and longitude BETWEEN {west} and {east} and date_of_transfer >= '2020-01-01'"
     # query = f'''
     # SELECT *
     # FROM `pp_data` AS pp 
