@@ -79,7 +79,7 @@ def get_prices_coordinates_from_coords(conn, latitude, longitude, distance_km = 
     FROM `pp_data` AS pp 
     INNER JOIN `postcode_data` AS po 
     ON pp.postcode = po.postcode
-    WHERE where latitude BETWEEN {south} and {north} and longitude BETWEEN {west} and {east}'''
+    WHERE latitude BETWEEN {south} and {north} and longitude BETWEEN {west} and {east}'''
     cur.execute(query)
     price_coordinates_data = cur.fetchall()
     return pd.DataFrame(price_coordinates_data)
