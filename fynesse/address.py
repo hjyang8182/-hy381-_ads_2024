@@ -148,7 +148,10 @@ def find_correlations_with_house_prices(merged_df, latitude, longitude):
     city_center = (latitude, longitude)
     gdf['distance_to_center'] = list(map(lambda x: geodesic(x, city_center).kilometers, list(zip(gdf['latitude'], gdf['longitude']))))
     features = ['price', 'area']
-    feature_df = {feature: gdf[feature].values.tolist() for feature in features}
-    feature_df = pd.DataFrame(feature_df)
-    corr_matrix = feature_df.corr()
+    features_df = {feature: gdf[feature].values.tolist() for feature in features}
+    features_df = pd.DataFrame(features_df)
+    corr_matrix = features_df.corr()
+    plt.scatter(features_df['area'].values, features_df['prices'].values)
+    plt.xlabel("Area (m2)")
+    plt.ylabel("Price")
     sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5)
