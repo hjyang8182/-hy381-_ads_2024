@@ -64,7 +64,7 @@ def get_poi_gdf(latitude, longitude, tags, distance_km = 1):
     east = longitude + box_height/2
     west = longitude - box_height/2
     pois = ox.geometries_from_bbox(north, south, east, west, tags)
-    pois['area'] = pois.geometry.to_crs(epsg=3395).area
+    pois['area_m2'] = pois.geometry.to_crs(epsg=3395).area
     return pois 
 
 def get_prices_coordinates_from_coords(conn, latitude, longitude, distance_km = 1): 
@@ -149,11 +149,11 @@ def find_correlations_with_house_prices(merged_df, latitude, longitude):
     gdf = gpd.GeoDataFrame(merged_df, crs = "ESPG:3395", geometry = merged_df['geometry'])
     city_center = (latitude, longitude)
     gdf['distance_to_center'] = list(map(lambda x: geodesic(x, city_center).kilometers, list(zip(gdf['latitude'], gdf['longitude']))))
-    features = ['price', 'area', 'distance_to_center']
+    features = ['price', 'area_m2', 'distance_to_center']
     features_df = {feature: gdf[feature].values.tolist() for feature in features}
     features_df = pd.DataFrame(features_df)
     corr_matrix = features_df.corr()
-    plt.scatter(features_df['area'].values, features_df['price'].values)
+    plt.scatter(features_df['area_m2'].values, features_df['price'].values)
     plt.xlabel("Area (m2)")
     plt.ylabel("Price")
     sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5)
