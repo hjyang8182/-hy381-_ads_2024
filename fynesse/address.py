@@ -24,6 +24,7 @@ import pymysql
 import geopandas as gpd
 import seaborn as sns
 from geopy.distance import geodesic
+import numpy as np
 
 def count_pois_near_coordinates(latitude: float, longitude: float, tags: dict, distance_km: float = 1.0) -> dict:
     """
@@ -132,7 +133,7 @@ def join_prices_coordinates_osm_data(conn, latitude, longitude, distance_km = 1)
     merged_on_addr = pd.merge(price_coordinates_data, building_addr_df, left_on = ['street', 'primary_addressable_object_name'], right_on = ['addr:street', 'addr:housenumber'], how = 'inner')
     buildings_not_merged_df = price_coordinates_data[~price_coordinates_data.index.isin(merged_on_addr.index)]
     pois_df = pd.DataFrame(pois)
-    buildings_not_merged_df['osmid'] = None
+    buildings_not_merged_df['osmid'] = np.nan
     for index, row in buildings_not_merged_df.iterrows(): 
         db_id = row['db_id']
         longitude, latitude = row['longitude'], row['latitude']
@@ -148,7 +149,7 @@ def find_correlations_with_house_prices(merged_df, latitude, longitude):
     gdf = gpd.GeoDataFrame(merged_df, crs = "ESPG:3395", geometry = merged_df['geometry'])
     city_center = (latitude, longitude)
     gdf['distance_to_center'] = list(map(lambda x: geodesic(x, city_center).kilometers, list(zip(gdf['latitude'], gdf['longitude']))))
-    features = ['price', 'area']
+    features = ['price', 'area', 'distance_to_center']
     features_df = {feature: gdf[feature].values.tolist() for feature in features}
     features_df = pd.DataFrame(features_df)
     corr_matrix = features_df.corr()
