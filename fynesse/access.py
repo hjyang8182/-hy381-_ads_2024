@@ -1,19 +1,22 @@
-from .config import *
+from fynesse.config import *
 import requests 
 import pymysql
-import yaml
-from ipywidgets import interact_manual, Text, Password
+import requests
+import zipfile
+import io
+import os
+import pandas as pd
+
 
 """These are the types of import we might expect in this file
 import httplib2
 import oauth2
 import tables
 import mongodb
-import sqlite"""
+
 
 # This file accesses the data
-
-"""Place commands in this file to access the data electronically. Don't remove any missing values, or deal with outliers. Make sure you have legalities correct, both intellectual property and personal data privacy rights. Beyond the legal side also think about the ethical issues around this data. """
+Place commands in this file to access the data electronically. Don't remove any missing values, or deal with outliers. Make sure you have legalities correct, both intellectual property and personal data privacy rights. Beyond the legal side also think about the ethical issues around this data. """
 
 def data():
     """Read the data from the web or local file, returning structured format such as a data frame"""
@@ -79,3 +82,23 @@ def housing_upload_join_data(conn, year):
   print('Data stored for year: ' + str(year))
   conn.commit()
   
+
+def download_census_data(code, base_dir=''):
+  url = f'https://www.nomisweb.co.uk/output/census/2021/census2021-{code.lower()}.zip'
+  extract_dir = os.path.join(base_dir, os.path.splitext(os.path.basename(url))[0])
+
+  if os.path.exists(extract_dir) and os.listdir(extract_dir):
+    print(f"Files already exist at: {extract_dir}.")
+    return
+
+  os.makedirs(extract_dir, exist_ok=True)
+  response = requests.get(url)
+  response.raise_for_status()
+
+  with zipfile.ZipFile(io.BytesIO(response.content)) as zip_ref:
+    zip_ref.extractall(extract_dir)
+
+  print(f"Files extracted to: {extract_dir}")
+
+def load_census_data(code, level='msoa'):
+  return pd.read_csv(f'census2021-{code.lower()}/census2021-{code.lower()}-{level}.csv')
