@@ -1,16 +1,6 @@
 from .config import *
 
 from . import access
-
-"""These are the types of import we might expect in this file
-import pandas
-import bokeh
-import seaborn
-import matplotlib.pyplot as plt
-import sklearn.decomposition as decomposition
-import sklearn.feature_extraction"""
-
-"""Place commands in this file to assess the data you have downloaded. How are missing values encoded, how are outliers encoded? What do columns represent, makes rure they are correctly labeled. How is the data indexed. Crete visualisation routines to assess the data (e.g. in bokeh). Ensure that date formats are correct and correctly timezoned."""
 import matplotlib.pyplot as plt
 import numpy as np
 import osmnx as ox
@@ -21,6 +11,16 @@ import geopandas as gpd
 import seaborn as sns
 from geopy.distance import geodesic
 import numpy as np
+"""These are the types of import we might expect in this file
+import pandas
+import bokeh
+import seaborn
+import matplotlib.pyplot as plt
+import sklearn.decomposition as decomposition
+import sklearn.feature_extraction"""
+
+"""Place commands in this file to assess the data you have downloaded. How are missing values encoded, how are outliers encoded? What do columns represent, makes rure they are correctly labeled. How is the data indexed. Crete visualisation routines to assess the data (e.g. in bokeh). Ensure that date formats are correct and correctly timezoned."""
+
 
 def data():
     """Load the data from access and ensure missing values are correctly encoded as well as indices correct, column names informative, date and times correctly formatted. Return a structured data structure such as a data frame."""
@@ -54,6 +54,34 @@ def count_pois_near_coordinates(latitude: float, longitude: float, tags: dict, d
     poi_dict = {}
     box_width = distance_km / 111
     box_height = distance_km / (111 * np.cos(np.radians(latitude)))
+    north = latitude + box_width/2
+    south = latitude - box_width/2
+    east = longitude + box_height/2
+    west = longitude - box_height/2
+    pois = ox.geometries_from_bbox(north, south, east, west, tags)
+    pois = pd.DataFrame(pois)
+    for tag in tags.keys():
+      if tag not in pois.columns:
+        poi_dict[tag] = 0
+      elif type(tags[tag]) is list:
+        for item in tags[tag]:
+          poi_dict[f"{tag}: {item}"] = len(pois[pois[tag] == item])
+      else:
+        poi_dict[tag] = len(pois[pois[tag].notnull()])
+    return poi_dict
+
+def count_pois_near_coordinates_box(latitude: float, longitude: float, tags: dict, box_width, box_height) -> dict:
+    """
+    Count Points of Interest (POIs) near a given pair of coordinates within a specified distance.
+    Args:
+        latitude (float): Latitude of the location.
+        longitude (float): Longitude of the location.
+        tags (dict): A dictionary of OSM tags to filter the POIs (e.g., {'amenity': True, 'tourism': True}).
+        distance_km (float): The distance around the location in kilometers. Default is 1 km.
+    Returns:
+        dict: A dictionary where keys are the OSM tags and values are the counts of POIs for each tag.
+    """
+    poi_dict = {}
     north = latitude + box_width/2
     south = latitude - box_width/2
     east = longitude + box_height/2
