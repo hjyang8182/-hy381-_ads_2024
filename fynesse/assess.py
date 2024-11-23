@@ -93,13 +93,23 @@ def count_pois_near_coordinates_box(latitude: float, longitude: float, tags: dic
     pois = ox.geometries_from_bbox(north, south, east, west, tags)
     pois = pd.DataFrame(pois)
     for tag in tags.keys():
-      if tag not in pois.columns:
-        poi_dict[tag] = 0
-      elif type(tags[tag]) is list:
-        for item in tags[tag]:
-          poi_dict[f"{tag}: {item}"] = len(pois[pois[tag] == item])
+      if tag in pois.columns.values: 
+        if type(tags[tag]) is list:
+          for item in tags[tag]:
+            count = len(pois[pois[tag] == item])
+            if np.isnan(count): 
+                poi_dict[f"{tag}: {item}"] = 0 
+            else: 
+                poi_dict[f"{tag}: {item}"] = count
+        else:
+          count = len(pois[pois[tag].notnull()])
+          poi_dict[tag] = count
       else:
-        poi_dict[tag] = len(pois[pois[tag].notnull()])
+        if type(tags[tag]) is list:
+          for item in tags[tag]:
+            poi_dict[f"{tag}: {item}"] = 0 
+        else: 
+          poi_dict[tag] = 0
     return poi_dict
 
 def get_poi_gdf(latitude, longitude, tags, distance_km = 1): 
