@@ -65,7 +65,11 @@ def count_pois_near_coordinates(latitude: float, longitude: float, tags: dict, d
         poi_dict[tag] = 0
       elif type(tags[tag]) is list:
         for item in tags[tag]:
-          poi_dict[f"{tag}: {item}"] = len(pois[pois[tag] == item])
+            count = len(pois[pois[tag] == item])
+            if np.isnan(count): 
+                poi_dict[f"{tag}: {item}"] = 0 
+            else: 
+                poi_dict[f"{tag}: {item}"] = count
       else:
         poi_dict[tag] = len(pois[pois[tag].notnull()])
     return poi_dict
