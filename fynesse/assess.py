@@ -39,6 +39,44 @@ def labelled(data):
     """Provide a labelled set of data ready for supervised learning."""
     raise NotImplementedError
 
+def get_bbox_for_region(region_geometry): 
+    '''
+    Calculates the coordinates of the centroid for the region as well as a bounding box that encompasses the region 
+    Args: 
+        region_geometry (Polygon): Polygon object that represents the geometry of a certain region 
+    Returns: 
+        latitude (float): Latitude of centroid
+        longitude (float): Longitude of centroid
+        box_width (float): Width of bounding box for the region 
+        box_height (float): Height of bounding box for the region
+    '''
+    centroid = region_geometry.centroid
+    min_x, min_y, max_x, max_y = region_geometry.bounds.values[0]
+    box_width = max_x - min_x
+    box_height = max_y - min_y
+    longitude = centroid.x
+    latitude = centroid.y
+    return (latitude, longitude, box_width, box_height)
+
+def find_poi_area(latitude, longitude, box_width, box_height, tags): 
+    '''
+    Finds the sum of the areas of POIs near a given pair of coordinates within a bounding box. 
+    Args: 
+    latitude (float): Latitude of the location 
+    longitude (float): Longitude of the location 
+    box_width (float): Width of the bounding box surrounding the location
+    box_height (float): Height of the bounding box surrounding the location 
+    tags (dict): A dictionary of OSM tags representing the POIs
+    '''
+    north = latitude + box_width/2
+    south = latitude - box_width/2
+    east = longitude + box_height/2
+    west = longitude - box_height/2
+    poi_gdf = ox.geometries_from_bbox(north, south, east, west, tags)
+    poi_gdf = poi_gdf.loc['relation']
+    poi_gdf['area_m2'] = poi_gdf.geometry.to_crs(epsg=3395).area
+    area_sum = poi_gdf['area_m2'].sum(axis = 0)
+    return area_sum
 
 def count_pois_near_coordinates(latitude: float, longitude: float, tags: dict, distance_km: float = 1.0) -> dict:
     """
