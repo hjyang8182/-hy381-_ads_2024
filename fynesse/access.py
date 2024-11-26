@@ -104,6 +104,6 @@ def load_census_data(code, level='msoa'):
   return pd.read_csv(f'census2021-{code.lower()}/census2021-{code.lower()}-{level}.csv')
 
 def save_data_from_csv(conn, csv_file, table): 
-  cur = conn.curosr()
+  cur = conn.cursor()
   cur.execute(f"LOAD DATA LOCAL INFILE '" + csv_file + f"' INTO TABLE {table} FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED by '\"' LINES STARTING BY '' TERMINATED BY '\n';")
   conn.commit()
