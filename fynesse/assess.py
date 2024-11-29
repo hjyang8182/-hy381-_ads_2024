@@ -96,7 +96,7 @@ def count_pois_near_coordinates(latitude: float, longitude: float, tags: dict, d
     east = longitude + box_height/2
     west = longitude - box_height/2
     bbox = (west, south, east, north)
-    pois = ox.features_from_bbox(bbox, tags)
+    pois = ox.features_from_bbox(bbox = bbox, tags = tags)
     pois = pd.DataFrame(pois)
     for tag in tags.keys():
       if tag not in pois.columns:
