@@ -6,7 +6,7 @@ import zipfile
 import io
 import os
 import pandas as pd
-
+import geopandas as gpd
 
 """These are the types of import we might expect in this file
 import httplib2
@@ -105,5 +105,9 @@ def load_census_data(code, level='msoa'):
 
 def save_data_from_csv(conn, csv_file, table): 
   cur = conn.cursor()
+  data_csv = pd.read(csv_file)
   cur.execute(f"LOAD DATA LOCAL INFILE '" + csv_file + f"' INTO TABLE {table} FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED by '\"' LINES STARTING BY '' TERMINATED BY '\n';")
   conn.commit()
+
+def __main__():
+  print(ox.__version__)

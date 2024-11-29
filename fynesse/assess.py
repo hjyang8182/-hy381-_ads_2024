@@ -1,6 +1,5 @@
 from .config import *
 
-from . import access
 import matplotlib.pyplot as plt
 import numpy as np
 import osmnx as ox
@@ -96,7 +95,8 @@ def count_pois_near_coordinates(latitude: float, longitude: float, tags: dict, d
     south = latitude - box_width/2
     east = longitude + box_height/2
     west = longitude - box_height/2
-    pois = ox.geometries_from_bbox(north, south, east, west, tags)
+    bbox = (west, south, east, north)
+    pois = ox.features_from_bbox(bbox, tags)
     pois = pd.DataFrame(pois)
     for tag in tags.keys():
       if tag not in pois.columns:
@@ -251,3 +251,4 @@ def find_correlations_with_house_prices(merged_df, latitude, longitude):
     plt.xlabel("Area (m2)")
     plt.ylabel("Price")
     sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5)
+
