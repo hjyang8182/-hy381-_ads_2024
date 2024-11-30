@@ -252,3 +252,49 @@ def find_correlations_with_house_prices(merged_df, latitude, longitude):
     plt.ylabel("Price")
     sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5)
 
+def get_prices_coordinates_oa_from_coords(conn, latitude, longitude, distance_km =1):
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    box_width = distance_km / 111
+    box_height = distance_km / (111 * np.cos(np.radians(latitude)))
+    north = latitude + box_width/2
+    south = latitude - box_width/2
+    east = longitude + box_height/2
+    west = longitude - box_height/2
+    query = f"SELECT * FROM `prices_coordinates_oa_data` where latitude BETWEEN {south} and {north} and longitude BETWEEN {west} and {east} and date_of_transfer >= '2020-01-01'"
+    # query = f'''
+    # SELECT *
+    # FROM `pp_data` AS pp 
+    # INNER JOIN `postcode_data` AS po 
+    # ON pp.postcode = po.postcode
+    # WHERE latitude BETWEEN {south} and {north} and longitude BETWEEN {west} and {east}'''
+    cur.execute(query)
+    price_coordinates_data = cur.fetchall()
+    return pd.DataFrame(price_coordinates_data)
+   
+def join_prices_coordinates_oa_osm_data(conn, latitude, longitude, distance_km = 1): 
+    price_coordinates_data = get_prices_coordinates_from_coords(conn, latitude, longitude, distance_km)
+    price_coordinates_data['street'] = price_coordinates_data['street'].str.lower()
+    price_coordinates_data['primary_addressable_object_name'] = price_coordinates_data['primary_addressable_object_name'].str.lower()
+
+    pois = get_poi_gdf(latitude, longitude, {"building": True})
+    addr_columns = ["addr:housenumber","addr:street", "addr:postcode"]
+    
+    building_addr = pois[pois[addr_columns].notna().all(axis = 1)]
+    building_addr['addr:street'] = building_addr['addr:street'].str.lower()
+    building_addr['addr:housenumber'] = building_addr['addr:housenumber'].str.lower()
+    building_addr_df = pd.DataFrame(building_addr)
+    
+    merged_on_addr = pd.merge(price_coordinates_data, building_addr_df, left_on = ['street', 'primary_addressable_object_name'], right_on = ['addr:street', 'addr:housenumber'], how = 'inner')
+    buildings_not_merged_df = price_coordinates_data[~price_coordinates_data.index.isin(merged_on_addr.index)]
+    pois_df = pd.DataFrame(pois)
+    buildings_not_merged_df['osmid'] = np.nan
+    for index, row in buildings_not_merged_df.iterrows(): 
+        db_id = row['db_id']
+        longitude, latitude = row['longitude'], row['latitude']
+        if pois_df[pois_df['geometry'].apply(lambda x: x.contains(Point(longitude, latitude)))].empty:
+            continue
+        else:
+            buildings_not_merged_df.loc[buildings_not_merged_df['db_id'] == db_id, 'osmid'] = pois_df[pois_df['geometry'].apply(lambda x: x.contains(Point(longitude, latitude)))].index[0][1]
+    merged_alt_df = pd.merge(buildings_not_merged_df, pois_df, on = 'osmid')
+    full_merged = pd.concat([merged_on_addr, merged_alt_df])
+    return full_merged
