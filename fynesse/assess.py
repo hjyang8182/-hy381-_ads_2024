@@ -303,7 +303,7 @@ def join_prices_coordinates_oa_osm_data(conn, latitude, longitude, distance_km =
 def tag_contains_key(dict_str, target_keys): 
     dict_obj = ast.literal_eval(dict_str)
     if isinstance(target_keys, dict):
-        any(key in dict_obj and dict_obj[key] == value for key, value in target_keys.items())
+        return any(key in dict_obj and dict_obj[key] == value for key, value in target_keys.items())
     return any(key in dict_obj.keys() for key in target_keys)
 
 def find_poi_count_oa(osm_nodes, connection, oa_id, distance_km, tag_keys):
@@ -321,12 +321,12 @@ def find_poi_count_oa(osm_nodes, connection, oa_id, distance_km, tag_keys):
     poi_nodes = poi_nodes[poi_nodes['tags'].apply(lambda x : tag_contains_key(x, tag_keys))]
     return poi_nodes.shape[0]
 
-def find_poi_count_rgn(osm_nodes, latitude, longitude, box_width, box_height, tag_keys): 
+def find_pois_rgn(osm_nodes, latitude, longitude, box_width, box_height, tag_keys): 
     north = latitude + box_width/2
     south = latitude - box_width/2
     east = longitude + box_height/2
     west = longitude - box_height/2
     poi_nodes = osm_nodes[(osm_nodes['lat'] >= south) & (osm_nodes['lat'] <= north) & (osm_nodes['long'] >= west) & (osm_nodes['long'] <= east)]
     poi_nodes = poi_nodes[poi_nodes['tags'].apply(lambda x : tag_contains_key(x, tag_keys))]
-    return poi_nodes.shape[0]
+    return poi_nodes
    
