@@ -9,6 +9,7 @@ import pymysql
 import geopandas as gpd
 import seaborn as sns
 from geopy.distance import geodesic
+import ast
 import numpy as np
 """These are the types of import we might expect in this file
 import pandas
@@ -298,3 +299,25 @@ def join_prices_coordinates_oa_osm_data(conn, latitude, longitude, distance_km =
     merged_alt_df = pd.merge(buildings_not_merged_df, pois_df, on = 'osmid')
     full_merged = pd.concat([merged_on_addr, merged_alt_df])
     return full_merged
+
+def tag_contains_key(dict_str, target_keys): 
+    dict_obj = ast.literal_eval(dict_str)
+    if isinstance(target_keys, dict):
+        any(key in dict_obj and dict_obj[key] == value for key, value in target_keys.items())
+    return any(key in dict_obj.keys() for key in target_keys)
+
+def find_poi_count(osm_csv, connection, oa_id, distance_km, tag_keys):
+    osm_nodes = pd.read_csv(osm_csv)
+    cur = connection.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select oa_id, lsoa_id, latitude, longitude, ST_AsText(geometry) as geom from oa_boundary_data where oa_id = '{oa_id}'")
+    oa_df = cur.fetchall()[0]
+    latitude, longitude = float(oa_df['latitude']), float(oa_df['longitude'])
+    box_width = distance_km / 111
+    box_height = distance_km / (111 * np.cos(np.radians(latitude)))
+    north = latitude + box_width/2
+    south = latitude - box_width/2
+    east = longitude + box_height/2
+    west = longitude - box_height/2
+    poi_nodes = osm_nodes[(osm_nodes['lat'] >= south) & (osm_nodes['lat'] <= north) & (osm_nodes['long'] >= west) & (osm_nodes['long'] <= east)]
+    poi_nodes = poi_nodes[poi_nodes['tags'].apply(lambda x : tag_contains_key(x, tag_keys))]
+    return poi_nodes.shape[0]
