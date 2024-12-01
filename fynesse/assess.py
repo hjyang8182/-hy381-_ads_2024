@@ -306,7 +306,7 @@ def tag_contains_key(dict_str, target_keys):
         any(key in dict_obj and dict_obj[key] == value for key, value in target_keys.items())
     return any(key in dict_obj.keys() for key in target_keys)
 
-def find_poi_count(osm_nodes, connection, oa_id, box_width, box_height tag_keys):
+def find_poi_count(osm_nodes, connection, oa_id, box_width, box_height, tag_keys):
     cur = connection.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"select oa_id, lsoa_id, latitude, longitude, ST_AsText(geometry) as geom from oa_boundary_data where oa_id = '{oa_id}'")
     oa_df = cur.fetchall()[0]
