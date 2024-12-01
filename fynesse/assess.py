@@ -51,7 +51,7 @@ def get_bbox_for_region(region_geometry):
         box_height (float): Height of bounding box for the region
     '''
     centroid = region_geometry.centroid
-    min_x, min_y, max_x, max_y = region_geometry.bounds
+    min_x, min_y, max_x, max_y = region_geometry.bounds.values[0]
     box_width = max_x - min_x
     box_height = max_y - min_y
     longitude = centroid.x
@@ -306,11 +306,13 @@ def tag_contains_key(dict_str, target_keys):
         any(key in dict_obj and dict_obj[key] == value for key, value in target_keys.items())
     return any(key in dict_obj.keys() for key in target_keys)
 
-def find_poi_count(osm_nodes, connection, oa_id, box_width, box_height, tag_keys):
+def find_poi_count_oa(osm_nodes, connection, oa_id, distance_km, tag_keys):
     cur = connection.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"select oa_id, lsoa_id, latitude, longitude, ST_AsText(geometry) as geom from oa_boundary_data where oa_id = '{oa_id}'")
     oa_df = cur.fetchall()[0]
     latitude, longitude = float(oa_df['latitude']), float(oa_df['longitude'])
+    box_width = distance_km / 111
+    box_height = distance_km / (111 * np.cos(np.radians(latitude)))
     north = latitude + box_width/2
     south = latitude - box_width/2
     east = longitude + box_height/2
@@ -318,3 +320,13 @@ def find_poi_count(osm_nodes, connection, oa_id, box_width, box_height, tag_keys
     poi_nodes = osm_nodes[(osm_nodes['lat'] >= south) & (osm_nodes['lat'] <= north) & (osm_nodes['long'] >= west) & (osm_nodes['long'] <= east)]
     poi_nodes = poi_nodes[poi_nodes['tags'].apply(lambda x : tag_contains_key(x, tag_keys))]
     return poi_nodes.shape[0]
+
+def find_poi_count_rgn(osm_nodes, latitude, longitude, box_width, box_height, tag_keys): 
+    north = latitude + box_width/2
+    south = latitude - box_width/2
+    east = longitude + box_height/2
+    west = longitude - box_height/2
+    poi_nodes = osm_nodes[(osm_nodes['lat'] >= south) & (osm_nodes['lat'] <= north) & (osm_nodes['long'] >= west) & (osm_nodes['long'] <= east)]
+    poi_nodes = poi_nodes[poi_nodes['tags'].apply(lambda x : tag_contains_key(x, tag_keys))]
+    return poi_nodes.shape[0]
+   
