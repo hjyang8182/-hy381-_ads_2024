@@ -51,7 +51,7 @@ def get_bbox_for_region(region_geometry):
         box_height (float): Height of bounding box for the region
     '''
     centroid = region_geometry.centroid
-    min_x, min_y, max_x, max_y = region_geometry.bounds.values[0]
+    min_x, min_y, max_x, max_y = region_geometry.bounds
     box_width = max_x - min_x
     box_height = max_y - min_y
     longitude = centroid.x
