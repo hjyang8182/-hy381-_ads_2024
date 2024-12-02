@@ -158,7 +158,7 @@ def get_poi_gdf(latitude, longitude, tags, distance_km = 1):
     south = latitude - box_width/2
     east = longitude + box_height/2
     west = longitude - box_height/2
-    pois = ox.geometries_from_bbox(north, south, east, west, tags)
+    pois = ox.features_from_bbox(north, south, east, west, tags)
     pois['area_m2'] = pois.geometry.to_crs(epsg=3395).area
     return pois 
 
