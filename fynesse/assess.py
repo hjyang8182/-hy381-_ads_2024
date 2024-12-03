@@ -262,7 +262,7 @@ def get_prices_coordinates_oa_from_coords(conn, latitude, longitude, distance_km
     south = latitude - box_width/2
     east = longitude + box_height/2
     west = longitude - box_height/2
-    query = f"SELECT * FROM `prices_coordinates_oa_data` where latitude BETWEEN {south} and {north} and longitude BETWEEN {west} and {east} and date_of_transfer >= '2020-01-01'"
+    query = f"SELECT * FROM `prices_coordinates_oa_data` where latitude BETWEEN {south} and {north} and longitude BETWEEN {west} and {east} and date_of_transfer >= '2015-01-01'"
     # query = f'''
     # SELECT *
     # FROM `pp_data` AS pp 
@@ -299,15 +299,16 @@ def join_prices_coordinates_oa_osm_data(conn, latitude, longitude, distance_km =
             buildings_not_merged_df.loc[buildings_not_merged_df['db_id'] == db_id, 'osmid'] = pois_df[pois_df['geometry'].apply(lambda x: x.contains(Point(longitude, latitude)))].index[0][1]
     merged_alt_df = pd.merge(buildings_not_merged_df, pois_df, on = 'osmid')
     full_merged = pd.concat([merged_on_addr, merged_alt_df])
+    full_merged = full_merged.set_index('db_id')
     return full_merged
 
-def tag_contains_key(dict_str, target_keys): 
+def tag_contains_key(dict_str, key, vals): 
     dict_obj = ast.literal_eval(dict_str)
-    if isinstance(target_keys, dict):
-        key = target_keys.keys()[0]
-        val = target_keys
-        return any(key in dict_obj and dict_obj[key] == value for key, value in target_keys.items())
-    return any(key in dict_obj.keys() for key in target_keys)
+    if vals== True: 
+        return key in dict_obj
+    elif isinstance(vals, list): 
+        return key in dict_obj and any(dict_obj[key] == val for val in vals)
+    return (key in dict_obj and dict_obj[key] == vals)
 
 def find_poi_count_oa(osm_nodes, connection, oa_id, distance_km, tag_keys):
     cur = connection.cursor(pymysql.cursors.DictCursor)
@@ -377,5 +378,44 @@ def find_all_poi_count_oa(connection, oa_id, tags):
     oa_poi_count = pd.concat(oa_pois)
     return oa_poi_count
 
+def find_houses_lsoa(connection, lsoa_id, distance_km):
+    cur = connection.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select oa_id, lsoa_id, latitude, longitude, ST_AsText(geometry) as geom from oa_boundary_data where lsoa_id = '{lsoa_id}'")
+    houses_df = []
+    oa_df = cur.fetchall()
+    for df in oa_df: 
+        latitude, longitude = float(df['latitude']), float(df['longitude'])
+        house_oa = join_prices_coordinates_oa_osm_data(connection, latitude, longitude, distance_km)
+        houses_df.append(house_oa)
+    if len(houses_df) == 0: 
+        return 
+    oa_houses_df = pd.concat(houses_df)
+    oa_houses_df = oa_houses_df.drop_duplicates()
+    return oa_houses_df
 
+def find_transport_lsoa(connection, lsoa_id): 
+    cur = connection.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select * from transport_node_data where lsoa_id = '{lsoa_id}'")
+    oa_df = cur.fetchall()
+    return pd.DataFrame(oa_df)
 
+def find_dist_house_corr_lsoa(connection, num_lsoas, all_lsoa_ids):
+    sample_lsoas = np.random.choice(all_lsoa_ids, num_lsoas, replace = False)
+    avg_distances = np.array([])
+    prices = np.array([])
+    for lsoa_id in sample_lsoas: 
+        houses_lsoa = find_houses_lsoa(connection, lsoa_id, 3)
+        transport_lsoa = find_transport_lsoa(connection, lsoa_id)
+        houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
+        transport_lsoa = gpd.GeoDataFrame(transport_lsoa, geometry = gpd.points_from_xy(transport_lsoa['longitude'], transport_lsoa['latitude']))
+        houses_lsoa['avg_distance'] = houses_lsoa.geometry.apply(lambda house: find_avg_distance(house, transport_lsoa))
+        avg_distances = np.append(avg_distances, houses_lsoa['avg_distance'].values)
+        prices = np.append(prices, houses_lsoa['price'].values)
+    plt.figure()
+    plt.scatter(avg_distances, prices)
+    return avg_distances, prices
+
+def find_avg_distance(house_point, transport_df):
+    distances = transport_df.distance(house_point)
+    return distances.mean()
+ 
