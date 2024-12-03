@@ -109,5 +109,3 @@ def save_data_from_csv(conn, csv_file, table):
   cur.execute(f"LOAD DATA LOCAL INFILE '" + csv_file + f"' INTO TABLE {table} FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED by '\"' LINES STARTING BY '' TERMINATED BY '\n';")
   conn.commit()
 
-def __main__():
-  print(ox.__version__)

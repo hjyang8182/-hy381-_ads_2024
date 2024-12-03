@@ -15,7 +15,7 @@ import tensorflow as tf
 import scipy.stats"""
 
 """Address a particular question that arises from the data"""
-
+from fynesse.config import *
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
