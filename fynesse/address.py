@@ -97,6 +97,38 @@ def measure_performance(y_pred, y):
     rmse = np.sqrt(np.mean((y-y_pred)**2))
     return rmse
 
+def k_fold_cross_validation_predict_students_regularized(k, dataset, alpha, l1_wt):
+    feature_cols = ['building:university', 'amenity:university', 'uni_area_sum']
+    performances = []
+    model_coefs = []
+    k_folds = split_dataset(k, dataset)
+    for i in range(k): 
+        # Prepare test data
+        test_data = k_folds[i]
+        test_indices = test_data.index.values
+        test_features = test_data.loc[test_indices][feature_cols].values
+        test_labels = test_data.loc[test_indices]['L15'].values
+        
+        # Train on traindata 
+        train_data = pd.DataFrame(pd.concat([k_folds[j] for j in range(k) if j != i]))
+        train_indices = train_data.index.values
+        train_features = train_data.loc[train_indices][feature_cols].values
+        train_labels = train_data.loc[train_indices]['L15'].values
+    
+        m_linear = sm.OLS(train_labels, train_features)
+        results_linear = m_linear.fit_regularized(alpha = alpha, l1_wt = l1_wt)
+        # if coefficients are largely different, overfitting 
+        model_coefs.append(results_linear.params)
+
+        train_pred = results_linear.predict(train_features)
+        train_performance = measure_performance(train_pred, train_labels)
+        # Test on test data
+        test_pred = results_linear.predict(test_features)
+        test_performance = measure_performance(test_pred, test_labels)
+        performances.append((train_performance,test_performance))
+    return performances, model_coefs
+
+
 def k_fold_cross_validation_predict_students(k, dataset):
     feature_cols = ['building:university', 'amenity:university', 'uni_area_sum']
     performances = []
@@ -127,3 +159,22 @@ def k_fold_cross_validation_predict_students(k, dataset):
         test_performance = measure_performance(test_pred['mean'], test_labels)
         performances.append((train_performance,test_performance))
     return performances, model_coefs
+
+
+def fit_linear_model_student_pop_regularized(connection, alpha=0.0002, l1_wt=1.0): 
+    cur = connection.cursor(pymysql.cursors.DictCursor)
+    query = """
+        select poi_count.*, ns.L15 from oa_poi_count_data as poi_count inner join ns_sec_boundary_data as ns on poi_count.oa_id = ns.oa_id
+    """
+    cur.execute(query)
+    all_poi_data = cur.fetchall()
+    all_poi_data_df = pd.DataFrame(all_poi_data)
+    all_poi_data_df.set_index('oa_id')
+
+    feature_cols = ['building:university', 'amenity:university', 'uni_area_sum']
+    all_features = all_poi_data_df[feature_cols].astype(float).values
+    student_proportion = np.array(list(map(lambda x : x['L15'], all_poi_data))).astype(float)
+
+    m_linear_all_feat = sm.OLS(student_proportion, all_features)
+    results_linear = m_linear_all_feat.fit_regularized(alpha=alpha, l1_wt = l1_wt)
+    return results_linear.params
