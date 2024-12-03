@@ -159,7 +159,8 @@ def get_poi_gdf(latitude, longitude, tags, distance_km = 1):
     south = latitude - box_width/2
     east = longitude + box_height/2
     west = longitude - box_height/2
-    pois = ox.features_from_bbox(north, south, east, west, tags)
+    bbox = (north, south, east, west)
+    pois = ox.features_from_bbox(bbox, tags)
     pois['area_m2'] = pois.geometry.to_crs(epsg=3395).area
     return pois 
 
@@ -362,4 +363,60 @@ def find_houses_lsoa(connection, lsoa_id, distance_km):
         houses_df.append(house_oa)
     if len(houses_df) == 0: 
         return 
-    re
+    return pd.concat(houses_df)
+
+def find_all_poi_count_oa(connection, oa_id, tags): 
+    oa_pois = []
+    cur = connection.cursor(pymysql.cursors.DictCursor)
+    for key, val in tags.items(): 
+        node_query = f"""
+            select * from osm_nodes_data where JSON_VALUE(tags, '%.{key}') = '{val}'
+        """
+        cur.execute(node_query)
+        osm_nodes = cur.fetchall()
+        osm_nodes['query_tag'] = f"{key}:{val}"
+        oa_pois.append(osm_nodes)
+    oa_poi_count = pd.concat(oa_pois)
+    return oa_poi_count
+
+def find_houses_lsoa(connection, lsoa_id, distance_km):
+    cur = connection.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select oa_id, lsoa_id, latitude, longitude, ST_AsText(geometry) as geom from oa_boundary_data where lsoa_id = '{lsoa_id}'")
+    houses_df = []
+    oa_df = cur.fetchall()
+    for df in oa_df: 
+        latitude, longitude = float(df['latitude']), float(df['longitude'])
+        house_oa = join_prices_coordinates_oa_osm_data(connection, latitude, longitude, distance_km)
+        houses_df.append(house_oa)
+    if len(houses_df) == 0: 
+        return 
+    oa_houses_df = pd.concat(houses_df)
+    oa_houses_df = oa_houses_df.drop_duplicates()
+    return oa_houses_df
+
+def find_transport_lsoa(connection, lsoa_id): 
+    cur = connection.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select * from transport_node_data where lsoa_id = '{lsoa_id}'")
+    oa_df = cur.fetchall()
+    return pd.DataFrame(oa_df)
+
+def find_dist_house_corr_lsoa(connection, num_lsoas, all_lsoa_ids):
+    sample_lsoas = np.random.choice(all_lsoa_ids, num_lsoas, replace = False)
+    avg_distances = np.array([])
+    prices = np.array([])
+    for lsoa_id in sample_lsoas: 
+        houses_lsoa = find_houses_lsoa(connection, lsoa_id, 3)
+        transport_lsoa = find_transport_lsoa(connection, lsoa_id)
+        houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
+        transport_lsoa = gpd.GeoDataFrame(transport_lsoa, geometry = gpd.points_from_xy(transport_lsoa['longitude'], transport_lsoa['latitude']))
+        houses_lsoa['avg_distance'] = houses_lsoa.geometry.apply(lambda house: find_avg_distance(house, transport_lsoa))
+        avg_distances = np.append(avg_distances, houses_lsoa['avg_distance'].values)
+        prices = np.append(prices, houses_lsoa['price'].values)
+    plt.figure()
+    plt.scatter(avg_distances, prices)
+    return avg_distances, prices
+
+def find_avg_distance(house_point, transport_df):
+    distances = transport_df.distance(house_point)
+    return distances.mean()
+ 
