@@ -361,21 +361,4 @@ def find_houses_lsoa(connection, lsoa_id, distance_km):
         houses_df.append(house_oa)
     if len(houses_df) == 0: 
         return 
-    return pd.concat(houses_df)
-
-def find_all_poi_count_oa(connection, oa_id, tags): 
-    oa_pois = []
-    cur = connection.cursor(pymysql.cursors.DictCursor)
-    for key, val in tags.items(): 
-        node_query = f"""
-            select * from osm_nodes_data where JSON_VALUE(tags, '%.{key}') = '{val}'
-        """
-        cur.execute(node_query)
-        osm_nodes = cur.fetchall()
-        osm_nodes['query_tag'] = f"{key}:{val}"
-        oa_pois.append(osm_nodes)
-    oa_poi_count = pd.concat(oa_pois)
-    return oa_poi_count
-
-
-
+    retu
