@@ -81,7 +81,7 @@ def housing_upload_join_data(conn, year):
   cur.execute(f"LOAD DATA LOCAL INFILE '" + csv_file_path + "' INTO TABLE `prices_coordinates_data` FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED by '\"' LINES STARTING BY '' TERMINATED BY '\n';")
   print('Data stored for year: ' + str(year))
   conn.commit()
-  
+  F
 
 def download_census_data(code, base_dir=''):
   url = f'https://www.nomisweb.co.uk/output/census/2021/census2021-{code.lower()}.zip'
@@ -108,3 +108,40 @@ def save_data_from_csv(conn, csv_file, table):
   data_csv = pd.read(csv_file)
   cur.execute(f"LOAD DATA LOCAL INFILE '" + csv_file + f"' INTO TABLE {table} FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED by '\"' LINES STARTING BY '' TERMINATED BY '\n';")
   conn.commit()
+
+def join_house_prices_with_oa(connection, oa_boundaries, year): 
+    cur = connection.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select * from prices_coordinates_data where date_of_transfer between '{year}-01-01' and '{year}-12-31'")
+    prices_coordinates_subset = cur.fetchall()
+   
+    prices_coordinates_df = pd.DataFrame.from_dict(prices_coordinates_subset)
+    prices_coordinates_gdf = gpd.GeoDataFrame(prices_coordinates_df, geometry = gpd.points_from_xy(prices_coordinates_df['longitude'], prices_coordinates_df['latitude']), crs = 'EPSG: 4326')
+    prices_coordinates_oa = gpd.sjoin(prices_coordinates_gdf, oa_boundaries, how = 'left', predicate = 'within')
+    prices_coordinates_oa = prices_coordinates_oa.drop(columns = ["geometry", "index_right"])
+    prices_coordinates_oa = pd.DataFrame(prices_coordinates_oa[~prices_coordinates_oa.isna().any(axis = 1)])
+    print(f"Joined data for {year}")
+    prices_coordinates_oa.to_csv(f"prices_coordinates_oa_{year}.csv", index = False)
+    cur.close()
+    connection.close()
+    return prices_coordinates_oa
+
+
+def upload_joined_house_oa(connection, year): 
+    csv_file_path = f"./prices_coordinates_oa_{year}.csv"
+    cur = connection.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"""
+        LOAD DATA LOCAL INFILE '{csv_file_path}' INTO TABLE prices_coordinates_oa_data
+        FIELDS TERMINATED BY ',' 
+        OPTIONALLY ENCLOSED by '\"' 
+        LINES STARTING BY '' 
+        TERMINATED BY '\n' 
+        IGNORE 1 LINES
+        (price, date_of_transfer, postcode, property_type,
+        new_build_flag, tenure_type, locality, town_city, district,
+        county, primary_addressable_object_name,
+        secondary_addressable_object_name, street, country, latitude,
+        longitude, db_id, oa_id, lsoa_name);""")
+    print(f"Uploaded joined data for {year}")
+    connection.commit()
+    cur.close()
+    connection.close()
