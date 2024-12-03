@@ -15,7 +15,7 @@ import tensorflow as tf
 import scipy.stats"""
 
 """Address a particular question that arises from the data"""
-from fynesse.config import *
+from .config import *
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
@@ -116,7 +116,7 @@ def k_fold_cross_validation_predict_students_regularized(k, dataset, alpha, l1_w
         train_labels = train_data.loc[train_indices]['L15'].values
     
         m_linear = sm.OLS(train_labels, train_features)
-        results_linear = m_linear.fit_regularized(alpha = alpha, l1_wt = l1_wt)
+        results_linear = m_linear.fit_regularized(alpha = alpha, L1_wt = l1_wt)
         # if coefficients are largely different, overfitting 
         model_coefs.append(results_linear.params)
 

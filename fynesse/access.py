@@ -1,4 +1,4 @@
-from fynesse.config import *
+from .config import *
 import requests 
 import pymysql
 import requests
@@ -108,4 +108,3 @@ def save_data_from_csv(conn, csv_file, table):
   data_csv = pd.read(csv_file)
   cur.execute(f"LOAD DATA LOCAL INFILE '" + csv_file + f"' INTO TABLE {table} FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED by '\"' LINES STARTING BY '' TERMINATED BY '\n';")
   conn.commit()
-
