@@ -159,7 +159,7 @@ def get_poi_gdf(latitude, longitude, tags, distance_km = 1):
     south = latitude - box_width/2
     east = longitude + box_height/2
     west = longitude - box_height/2
-    bbox = (north, south, east, west)
+    bbox = (west, south, east, north)
     pois = ox.features_from_bbox(bbox, tags)
     pois['area_m2'] = pois.geometry.to_crs(epsg=3395).area
     return pois 
@@ -193,7 +193,7 @@ def plot_buildings_near_coordinates(place_name, latitude: float, longitude: floa
     west = longitude - box_height/2
 
     addr_columns = ["addr:housenumber","addr:street", "addr:postcode"]
-    pois = get_poi_gdf(latitude, longitude, {"building": True})
+    pois = get_poi_gdf(latitude, longitude, {'building': True})
 
     building_addr = pois[pois[addr_columns].notna().all(axis = 1)]
     building_no_addr = pois[pois[addr_columns].isna().any(axis = 1)]
@@ -217,7 +217,7 @@ def join_prices_coordinates_osm_data(conn, latitude, longitude, distance_km = 1)
     price_coordinates_data['street'] = price_coordinates_data['street'].str.lower()
     price_coordinates_data['primary_addressable_object_name'] = price_coordinates_data['primary_addressable_object_name'].str.lower()
 
-    pois = get_poi_gdf(latitude, longitude, {"building": True})
+    pois = get_poi_gdf(latitude, longitude, {'building': True})
     addr_columns = ["addr:housenumber","addr:street", "addr:postcode"]
     
     building_addr = pois[pois[addr_columns].notna().all(axis = 1)]
@@ -279,7 +279,7 @@ def join_prices_coordinates_oa_osm_data(conn, latitude, longitude, distance_km =
     price_coordinates_data['street'] = price_coordinates_data['street'].str.lower()
     price_coordinates_data['primary_addressable_object_name'] = price_coordinates_data['primary_addressable_object_name'].str.lower()
 
-    pois = get_poi_gdf(latitude, longitude, {"building": True})
+    pois = get_poi_gdf(latitude, longitude, {'building': True})
     addr_columns = ["addr:housenumber","addr:street", "addr:postcode"]
     
     building_addr = pois[pois[addr_columns].notna().all(axis = 1)]
@@ -385,6 +385,7 @@ def find_houses_lsoa(connection, lsoa_id, distance_km):
     houses_df = []
     oa_df = cur.fetchall()
     for df in oa_df: 
+        
         latitude, longitude = float(df['latitude']), float(df['longitude'])
         house_oa = join_prices_coordinates_oa_osm_data(connection, latitude, longitude, distance_km)
         houses_df.append(house_oa)
