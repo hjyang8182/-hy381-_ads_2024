@@ -12,6 +12,7 @@ import seaborn as sns
 from geopy.distance import geodesic
 import ast
 import matplotlib.dates as mdates
+import random
 import numpy as np
 """These are the types of import we might expect in this file
 import pandas

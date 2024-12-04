@@ -145,27 +145,3 @@ def upload_joined_house_oa(connection, year):
     connection.commit()
     cur.close()
     connection.close()
-
-
-
-    def find_houses_lsoa(connection, lsoa_id, distance_km):
-    cur = connection.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select oa_id, lsoa_id, latitude, longitude, ST_AsText(geometry) as geom from oa_boundary_data where lsoa_id = '{lsoa_id}'")
-    houses_df = []
-    oa_df = cur.fetchall()
-    for df in oa_df: 
-        latitude, longitude = float(df['latitude']), float(df['longitude'])
-        box_width = distance_km / 111
-        box_height = distance_km / (111 * np.cos(np.radians(latitude)))
-        north = latitude + box_width/2
-        south = latitude - box_width/2
-        east = longitude + box_height/2
-        west = longitude - box_height/2
-        cur.execute(f"select * from prices_coordinates_oa_data where latitude between {south} and {north} and longitude between {west} and {east}")
-        house_oa = pd.DataFrame(cur.fetchall())
-        houses_df.append(house_oa)
-    if len(houses_df) == 0: 
-        return 
-    oa_houses_df = pd.concat(houses_df)
-    oa_houses_df = oa_houses_df.drop_duplicates()
-    return oa_houses_df
