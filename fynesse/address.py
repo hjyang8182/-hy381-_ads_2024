@@ -161,8 +161,6 @@ def k_fold_cross_validation_predict_students(k, dataset, feature_cols):
 
 
 def fit_linear_model_student_pop_regularized(feature_cols, all_poi_data_df, alpha=0.0002, l1_wt=1.0): 
-    all_poi_data_df.set_index('oa_id')
-
     all_features = all_poi_data_df[feature_cols].values.astype(float)
     student_proportion = all_poi_data_df['L15'].values.astype(float)
 
