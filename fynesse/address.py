@@ -98,8 +98,7 @@ def measure_performance(y_pred, y):
     rmse = np.sqrt(np.mean((y-y_pred)**2))
     return rmse
 
-def k_fold_cross_validation_predict_students_regularized(k, dataset, alpha, l1_wt):
-    feature_cols = ['building:university', 'amenity:university', 'uni_area_sum']
+def k_fold_cross_validation_predict_students_regularized(k, dataset, feature_cols, alpha, l1_wt):
     performances = []
     model_coefs = []
     k_folds = split_dataset(k, dataset)
@@ -130,8 +129,7 @@ def k_fold_cross_validation_predict_students_regularized(k, dataset, alpha, l1_w
     return performances, model_coefs
 
 
-def k_fold_cross_validation_predict_students(k, dataset):
-    feature_cols = ['building:university', 'amenity:university', 'uni_area_sum']
+def k_fold_cross_validation_predict_students(k, dataset, feature_cols):
     performances = []
     model_coefs = []
     k_folds = split_dataset(k, dataset)
