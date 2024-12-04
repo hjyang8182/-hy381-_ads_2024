@@ -409,6 +409,10 @@ def find_transaction_lsoa(connection, lsoa_id):
     return pd.DataFrame(lsoa_houses)
 
 def plot_house_price_changes(connection, lsoa_id):
+    cur = connection.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select lsoa_name from oa_boundary_data where lsoa_id = {lsoa_id}")
+    lsoa_name = cur.fetchall()[0]
+    lsoa_name = lsoa_name['lsoa_name']
     houses_df = find_transaction_lsoa(connection, lsoa_id)
     transport_df = find_transport_lsoa(connection, lsoa_id)
     creation_dates = np.unique(transport_df.creation_date.values)
@@ -422,7 +426,7 @@ def plot_house_price_changes(connection, lsoa_id):
     fig, axs = plt.subplots(3, 3, figsize=(12, 12)) 
     for i in range(3):
         for j in range(3):
-            key = same_houses_sample[i]
+            key = same_houses_sample[i*j]
             house = same_houses[key]
             oa_id = house.oa_id.values[0]
             date_of_transfer = mdates.date2num(house.date_of_transfer.values)
