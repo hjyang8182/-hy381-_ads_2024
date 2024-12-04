@@ -424,37 +424,4 @@ def plot_house_price_changes(connection, lsoa_id):
         for j in range(3):
             key = same_houses_sample[i]
             house = same_houses[key]
-            oa_id = house.oa_id.values[0]
-            date_of_transfer = mdates.date2num(house.date_of_transfer.values)
-            prices = house.price.values
-            axs[i, j].plot(date_of_transfer, prices)  
-            axs[i, j].set_title(f"{key}", fontsize=8, fontweight='light')
-            for date in creation_dates: 
-                if date >= np.min(house.date_of_transfer) and date <= np.max(house.date_of_transfer):
-                    date = mdates.date2num(date)
-                    axs[i, j].axvline(x= date, color='red', linestyle='--', linewidth=1.5)
-            axs[i, j].xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-            for tick in axs[i, j].get_xticklabels():
-                tick.set_rotation(45)  # Rotate tick labels by 45 degrees
-    plt.tight_layout()
-
-def find_dist_house_corr_lsoa(connection, num_lsoas, all_lsoa_ids):
-    sample_lsoas = np.random.choice(all_lsoa_ids, num_lsoas, replace = False)
-    avg_distances = np.array([])
-    prices = np.array([])
-    for lsoa_id in sample_lsoas: 
-        houses_lsoa = find_houses_lsoa(connection, lsoa_id, 3)
-        transport_lsoa = find_transport_lsoa(connection, lsoa_id)
-        houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
-        transport_lsoa = gpd.GeoDataFrame(transport_lsoa, geometry = gpd.points_from_xy(transport_lsoa['longitude'], transport_lsoa['latitude']))
-        houses_lsoa['avg_distance'] = houses_lsoa.geometry.apply(lambda house: find_avg_distance(house, transport_lsoa))
-        avg_distances = np.append(avg_distances, houses_lsoa['avg_distance'].values)
-        prices = np.append(prices, houses_lsoa['price'].values)
-    plt.figure()
-    plt.scatter(avg_distances, prices)
-    return avg_distances, prices
-
-def find_avg_distance(house_point, transport_df):
-    distances = transport_df.distance(house_point)
-    return distances.mean()
- 
+            oa_id = house.oa_id.val
