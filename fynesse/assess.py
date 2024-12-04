@@ -396,15 +396,15 @@ def find_houses_lsoa(connection, lsoa_id, distance_km):
     oa_houses_df = oa_houses_df.drop_duplicates()
     return oa_houses_df
 
-def find_transport_lsoa(connection, lsoa_name): 
+def find_transport_lsoa(connection, lsoa_id): 
     cur = connection.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select * from transport_node_data where lsoa_name = '{lsoa_name}'")
+    cur.execute(f"select * from transport_node_data where lsoa_id = '{lsoa_id}'")
     oa_df = cur.fetchall()
     return pd.DataFrame(oa_df)
 
-def find_transaction_lsoa(connection, lsoa_id):
+def find_transaction_lsoa(connection, lsoa_name):
     cur = connection.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select * from prices_coordinates_oa_data where lsoa_id = '{lsoa_id}'")
+    cur.execute(f"select * from prices_coordinates_oa_data where lsoa_name = '{lsoa_name}'")
     lsoa_houses = cur.fetchall()
     return pd.DataFrame(lsoa_houses)
 
