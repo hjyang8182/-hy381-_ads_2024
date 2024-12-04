@@ -165,5 +165,5 @@ def fit_linear_model_student_pop_regularized(feature_cols, all_poi_data_df, alph
     student_proportion = all_poi_data_df['L15'].values.astype(float)
 
     m_linear_all_feat = sm.OLS(student_proportion, all_features)
-    results_linear = m_linear_all_feat.fit_regularized(alpha=alpha, l1_wt = l1_wt)
+    results_linear = m_linear_all_feat.fit_regularized(alpha=alpha, L1_wt = l1_wt)
     return results_linear.params
