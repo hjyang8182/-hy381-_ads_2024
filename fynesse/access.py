@@ -145,8 +145,3 @@ def upload_joined_house_oa(connection, year):
     cur.close()
     connection.close()
 
-def find_poi_counts(poi_df, oa_poi_df, tag): 
-    joined_poi_oa = gpd.sjoin(oa_poi_df, poi_df, predicate = 'contains')
-    oa_counts = joined_poi_oa.groupby('OA21CD').size().reset_index()
-    oa_counts = oa_counts.rename(columns = {0 : tag})
-    return oa_counts
