@@ -396,9 +396,9 @@ def find_houses_lsoa(connection, lsoa_id, distance_km):
     oa_houses_df = oa_houses_df.drop_duplicates()
     return oa_houses_df
 
-def find_transport_lsoa(connection, lsoa_id): 
+def find_transport_lsoa(connection, lsoa_name): 
     cur = connection.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select * from transport_node_data where lsoa_id = '{lsoa_id}'")
+    cur.execute(f"select * from transport_node_data where lsoa_name = '{lsoa_name}'")
     oa_df = cur.fetchall()
     return pd.DataFrame(oa_df)
 
@@ -410,10 +410,10 @@ def find_transaction_lsoa(connection, lsoa_id):
 
 def plot_house_price_changes(connection, lsoa_id):
     cur = connection.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select lsoa_name from oa_boundary_data where lsoa_id = {lsoa_id}")
+    cur.execute(f"select lsoa_name from oa_boundary_data where lsoa_id = '{lsoa_id}'")
     lsoa_name = cur.fetchall()[0]
     lsoa_name = lsoa_name['lsoa_name']
-    houses_df = find_transaction_lsoa(connection, lsoa_id)
+    houses_df = find_transaction_lsoa(connection, lsoa_name)
     transport_df = find_transport_lsoa(connection, lsoa_id)
     creation_dates = np.unique(transport_df.creation_date.values)
     house_groups = houses_df.groupby(['street','primary_addressable_object_name', 'secondary_addressable_object_name'])[['price', 'date_of_transfer', 'oa_id']]
