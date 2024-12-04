@@ -11,6 +11,7 @@ import geopandas as gpd
 import seaborn as sns
 from geopy.distance import geodesic
 import ast
+import matplotlib.dates as mdates
 import numpy as np
 """These are the types of import we might expect in this file
 import pandas
@@ -385,7 +386,6 @@ def find_houses_lsoa(connection, lsoa_id, distance_km):
     houses_df = []
     oa_df = cur.fetchall()
     for df in oa_df: 
-        
         latitude, longitude = float(df['latitude']), float(df['longitude'])
         house_oa = join_prices_coordinates_oa_osm_data(connection, latitude, longitude, distance_km)
         houses_df.append(house_oa)
@@ -400,6 +400,42 @@ def find_transport_lsoa(connection, lsoa_id):
     cur.execute(f"select * from transport_node_data where lsoa_id = '{lsoa_id}'")
     oa_df = cur.fetchall()
     return pd.DataFrame(oa_df)
+
+def find_transaction_lsoa(connection, lsoa_id):
+    cur = connection.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select * from prices_coordinates_oa_data where lsoa_id = '{lsoa_id}'")
+    lsoa_houses = cur.fetchall()
+    return pd.DataFrame(lsoa_houses)
+
+def plot_house_price_changes(connection, lsoa_id):
+    houses_df = find_transaction_lsoa(connection, lsoa_id)
+    transport_df = find_transport_lsoa(connection, lsoa_id)
+    creation_dates = np.unique(transport_df.creation_date.values)
+    house_groups = houses_df.groupby(['street','primary_addressable_object_name', 'secondary_addressable_object_name'])[['price', 'date_of_transfer', 'oa_id']]
+    same_houses = {}
+    for address, group in house_groups: 
+        if len(group) > 1: 
+            same_houses[address] = group
+    keys = list(same_houses.keys())
+    same_houses_sample = random.sample(keys, 9)
+    fig, axs = plt.subplots(3, 3, figsize=(12, 12)) 
+    for i in range(3):
+        for j in range(3):
+            key = same_houses_sample[i]
+            house = same_houses[key]
+            oa_id = house.oa_id.values[0]
+            date_of_transfer = mdates.date2num(house.date_of_transfer.values)
+            prices = house.price.values
+            axs[i, j].plot(date_of_transfer, prices)  
+            axs[i, j].set_title(f"{key}", fontsize=8, fontweight='light')
+            for date in creation_dates: 
+                if date >= np.min(house.date_of_transfer) and date <= np.max(house.date_of_transfer):
+                    date = mdates.date2num(date)
+                    axs[i, j].axvline(x= date, color='red', linestyle='--', linewidth=1.5)
+            axs[i, j].xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+            for tick in axs[i, j].get_xticklabels():
+                tick.set_rotation(45)  # Rotate tick labels by 45 degrees
+    plt.tight_layout()
 
 def find_dist_house_corr_lsoa(connection, num_lsoas, all_lsoa_ids):
     sample_lsoas = np.random.choice(all_lsoa_ids, num_lsoas, replace = False)
