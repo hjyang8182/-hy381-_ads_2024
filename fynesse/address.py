@@ -160,19 +160,11 @@ def k_fold_cross_validation_predict_students(k, dataset, feature_cols):
     return performances, model_coefs
 
 
-def fit_linear_model_student_pop_regularized(connection, alpha=0.0002, l1_wt=1.0): 
-    cur = connection.cursor(pymysql.cursors.DictCursor)
-    query = """
-        select poi_count.*, ns.L15 from oa_poi_count_data as poi_count inner join ns_sec_boundary_data as ns on poi_count.oa_id = ns.oa_id
-    """
-    cur.execute(query)
-    all_poi_data = cur.fetchall()
-    all_poi_data_df = pd.DataFrame(all_poi_data)
+def fit_linear_model_student_pop_regularized(feature_cols, all_poi_data_df, alpha=0.0002, l1_wt=1.0): 
     all_poi_data_df.set_index('oa_id')
 
-    feature_cols = ['building:university', 'amenity:university', 'uni_area_sum']
-    all_features = all_poi_data_df[feature_cols].astype(float).values
-    student_proportion = np.array(list(map(lambda x : x['L15'], all_poi_data))).astype(float)
+    all_features = all_poi_data_df[feature_cols].values.astype(float)
+    student_proportion = all_poi_data_df['L15'].values.astype(float)
 
     m_linear_all_feat = sm.OLS(student_proportion, all_features)
     results_linear = m_linear_all_feat.fit_regularized(alpha=alpha, l1_wt = l1_wt)
