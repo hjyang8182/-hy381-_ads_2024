@@ -7,6 +7,8 @@ import io
 import os
 import pandas as pd
 import geopandas as gpd
+from pyrosm import OSM
+from shapely.geometry import box
 
 """These are the types of import we might expect in this file
 import httplib2
@@ -145,3 +147,11 @@ def upload_joined_house_oa(connection, year):
     cur.close()
     connection.close()
 
+def find_houses_bbox(bbox_coords):
+   """ Given a bounding box, finds the POIs within the bbox tagged with 'building=residential'
+   :param bbox_coords: (west, south, east, north) coordinates 
+   :return: GDF with the POIs 
+   """
+   osm = OSM('./data/building_residential.osm.pbf')
+   bbox_houses = osm.get_data_by_bbox(*bbox_coords)
+   return bbox_houses
