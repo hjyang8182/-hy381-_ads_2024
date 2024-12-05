@@ -175,4 +175,8 @@ def get_bbox_for_region(region_geometry):
     box_height = max_y - min_y
     longitude = centroid.x
     latitude = centroid.y
-    return (latitude, longitude, box_width, box_height)
+    north = latitude + box_width/2
+    south = latitude - box_width/2
+    east = longitude + box_height/2
+    west = longitude - box_height/2
+    return (west, south, east, north)
