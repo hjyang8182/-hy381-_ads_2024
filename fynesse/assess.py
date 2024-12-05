@@ -1,6 +1,6 @@
 import pymysql.cursors
 from .config import *
-
+from .access import *
 import matplotlib.pyplot as plt
 import numpy as np
 import osmnx as ox
@@ -149,14 +149,9 @@ def get_poi_gdf(latitude, longitude, tags, distance_km = 1):
     pois['area_m2'] = pois.geometry.to_crs(epsg=3395).area
     return pois 
 
-def get_prices_coordinates_from_coords(conn, latitude, longitude, distance_km = 1): 
+def get_prices_coordinates_from_coords(conn, bbox): 
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    box_width = distance_km / 111
-    box_height = distance_km / (111 * np.cos(np.radians(latitude)))
-    north = latitude + box_width/2
-    south = latitude - box_width/2
-    east = longitude + box_height/2
-    west = longitude - box_height/2
+    west, south, east, north = bbox
     query = f"SELECT * FROM `prices_coordinates_data` where latitude BETWEEN {south} and {north} and longitude BETWEEN {west} and {east} and date_of_transfer >= '2020-01-01'"
     # query = f'''
     # SELECT *
@@ -197,20 +192,18 @@ def plot_buildings_near_coordinates(place_name, latitude: float, longitude: floa
     building_addr.plot(ax=ax, color = "blue", alpha=1 ,markersize=10)
     building_no_addr.plot(ax=ax, color = "red", alpha=1 ,markersize=10) 
 
-def join_prices_coordinates_osm_data(conn, latitude, longitude, distance_km = 1): 
-    price_coordinates_data = get_prices_coordinates_from_coords(conn, latitude, longitude, distance_km)
+def join_prices_coordinates_osm_data(conn, bbox): 
+    price_coordinates_data = get_prices_coordinates_from_coords(conn, bbox)
     price_coordinates_data['street'] = price_coordinates_data['street'].str.lower()
     price_coordinates_data['primary_addressable_object_name'] = price_coordinates_data['primary_addressable_object_name'].str.lower()
 
-    pois = get_poi_gdf(latitude, longitude, {'building': True})
-    addr_columns = ["addr:housenumber","addr:street", "addr:postcode"]
+    pois = find_houses_bbox(bbox)
+    addr_columns = ["addr:housenumber","addr:street"]
     
     building_addr = pois[pois[addr_columns].notna().all(axis = 1)]
     building_addr['addr:street'] = building_addr['addr:street'].str.lower()
     building_addr['addr:housenumber'] = building_addr['addr:housenumber'].str.lower()
     building_addr_df = pd.DataFrame(building_addr)
-    
-    building_no_addr = pois[pois[addr_columns].isna().any(axis = 1)]
     
     merged_on_addr = pd.merge(price_coordinates_data, building_addr_df, left_on = ['street', 'primary_addressable_object_name'], right_on = ['addr:street', 'addr:housenumber'], how = 'inner')
     buildings_not_merged_df = price_coordinates_data[~price_coordinates_data.index.isin(merged_on_addr.index)]
