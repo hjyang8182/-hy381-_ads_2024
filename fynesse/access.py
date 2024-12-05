@@ -152,6 +152,9 @@ def find_houses_bbox(bbox_coords):
    :param bbox_coords: (west, south, east, north) coordinates 
    :return: GDF with the POIs 
    """
-   osm = OSM('./data/building_residential.osm.pbf')
+   current_dir = os.path.dirname(__file__)
+   data_dir = os.path.join(current_dir, 'data')
+   osm_path = os.path.join(data_dir, 'building_residential.osm.pbf')
+   osm = OSM(osm_path)
    bbox_houses = osm.get_data_by_bbox(*bbox_coords)
    return bbox_houses
