@@ -42,24 +42,7 @@ def labelled(data):
     """Provide a labelled set of data ready for supervised learning."""
     raise NotImplementedError
 
-def get_bbox_for_region(region_geometry): 
-    '''
-    Calculates the coordinates of the centroid for the region as well as a bounding box that encompasses the region 
-    Args: 
-        region_geometry (Polygon): Polygon object that represents the geometry of a certain region 
-    Returns: 
-        latitude (float): Latitude of centroid
-        longitude (float): Longitude of centroid
-        box_width (float): Width of bounding box for the region 
-        box_height (float): Height of bounding box for the region
-    '''
-    centroid = region_geometry.centroid
-    min_x, min_y, max_x, max_y = region_geometry.bounds
-    box_width = max_x - min_x
-    box_height = max_y - min_y
-    longitude = centroid.x
-    latitude = centroid.y
-    return (latitude, longitude, box_width, box_height)
+
 
 def find_poi_area(latitude, longitude, box_width, box_height, tags): 
     '''
