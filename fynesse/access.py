@@ -155,6 +155,24 @@ def find_houses_bbox(bbox_coords):
    current_dir = os.path.dirname(__file__)
    data_dir = os.path.join(current_dir, 'data')
    osm_path = os.path.join(data_dir, 'building_residential.osm.pbf')
-   osm = OSM(osm_path)
-   bbox_houses = osm.get_data_by_bbox(*bbox_coords)
+   bbox_houses = gpd.read_file(osm_path, bbox = bbox_coords)
    return bbox_houses
+
+def get_bbox_for_region(region_geometry): 
+    '''
+    Calculates the coordinates of the centroid for the region as well as a bounding box that encompasses the region 
+    Args: 
+        region_geometry (Polygon): Polygon object that represents the geometry of a certain region 
+    Returns: 
+        latitude (float): Latitude of centroid
+        longitude (float): Longitude of centroid
+        box_width (float): Width of bounding box for the region 
+        box_height (float): Height of bounding box for the region
+    '''
+    centroid = region_geometry.centroid
+    min_x, min_y, max_x, max_y = region_geometry.bounds
+    box_width = max_x - min_x
+    box_height = max_y - min_y
+    longitude = centroid.x
+    latitude = centroid.y
+    return (latitude, longitude, box_width, box_height)
