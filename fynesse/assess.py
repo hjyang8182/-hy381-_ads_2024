@@ -43,7 +43,6 @@ def labelled(data):
     raise NotImplementedError
 
 
-
 def find_poi_area(latitude, longitude, box_width, box_height, tags): 
     '''
     Finds the sum of the areas of POIs near a given pair of coordinates within a bounding box. 
@@ -192,34 +191,6 @@ def plot_buildings_near_coordinates(place_name, latitude: float, longitude: floa
     building_addr.plot(ax=ax, color = "blue", alpha=1 ,markersize=10)
     building_no_addr.plot(ax=ax, color = "red", alpha=1 ,markersize=10) 
 
-def join_prices_coordinates_osm_data(conn, bbox): 
-    price_coordinates_data = get_prices_coordinates_from_coords(conn, bbox)
-    price_coordinates_data['street'] = price_coordinates_data['street'].str.lower()
-    price_coordinates_data['primary_addressable_object_name'] = price_coordinates_data['primary_addressable_object_name'].str.lower()
-
-    pois = find_houses_bbox(bbox)
-    addr_columns = ["addr:housenumber","addr:street"]
-    
-    building_addr = pois[pois[addr_columns].notna().all(axis = 1)]
-    building_addr['addr:street'] = building_addr['addr:street'].str.lower()
-    building_addr['addr:housenumber'] = building_addr['addr:housenumber'].str.lower()
-    building_addr_df = pd.DataFrame(building_addr)
-    
-    merged_on_addr = pd.merge(price_coordinates_data, building_addr_df, left_on = ['street', 'primary_addressable_object_name'], right_on = ['addr:street', 'addr:housenumber'], how = 'inner')
-    buildings_not_merged_df = price_coordinates_data[~price_coordinates_data.index.isin(merged_on_addr.index)]
-    pois_df = pd.DataFrame(pois)
-    buildings_not_merged_df['osmid'] = np.nan
-    for index, row in buildings_not_merged_df.iterrows(): 
-        db_id = row['db_id']
-        longitude, latitude = row['longitude'], row['latitude']
-        if pois_df[pois_df['geometry'].apply(lambda x: x.contains(Point(longitude, latitude)))].empty:
-            continue
-        else:
-            buildings_not_merged_df.loc[buildings_not_merged_df['db_id'] == db_id, 'osmid'] = pois_df[pois_df['geometry'].apply(lambda x: x.contains(Point(longitude, latitude)))].index[0][1]
-    merged_alt_df = pd.merge(buildings_not_merged_df, pois_df, on = 'osmid')
-    full_merged = pd.concat([merged_on_addr, merged_alt_df])
-    return full_merged
-
 def find_correlations_with_house_prices(merged_df, latitude, longitude):
     gdf = gpd.GeoDataFrame(merged_df, crs = "ESPG:3395", geometry = merged_df['geometry'])
     city_center = (latitude, longitude)
@@ -233,129 +204,39 @@ def find_correlations_with_house_prices(merged_df, latitude, longitude):
     plt.ylabel("Price")
     sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5)
 
-def get_prices_coordinates_oa_from_coords(conn, latitude, longitude, distance_km =1):
-    cur = conn.cursor(pymysql.cursors.DictCursor)
-    box_width = distance_km / 111
-    box_height = distance_km / (111 * np.cos(np.radians(latitude)))
-    north = latitude + box_width/2
-    south = latitude - box_width/2
-    east = longitude + box_height/2
-    west = longitude - box_height/2
-    query = f"SELECT * FROM `prices_coordinates_oa_data` where latitude BETWEEN {south} and {north} and longitude BETWEEN {west} and {east} and date_of_transfer >= '2015-01-01'"
-    # query = f'''
-    # SELECT *
-    # FROM `pp_data` AS pp 
-    # INNER JOIN `postcode_data` AS po 
-    # ON pp.postcode = po.postcode
-    # WHERE latitude BETWEEN {south} and {north} and longitude BETWEEN {west} and {east}'''
-    cur.execute(query)
-    price_coordinates_data = cur.fetchall()
-    return pd.DataFrame(price_coordinates_data)
-   
-def join_prices_coordinates_oa_osm_data(conn, latitude, longitude, distance_km = 1): 
-    price_coordinates_data = get_prices_coordinates_from_coords(conn, latitude, longitude, distance_km)
-    price_coordinates_data['street'] = price_coordinates_data['street'].str.lower()
-    price_coordinates_data['primary_addressable_object_name'] = price_coordinates_data['primary_addressable_object_name'].str.lower()
 
-    pois = get_poi_gdf(latitude, longitude, {'building': True})
-    addr_columns = ["addr:housenumber","addr:street", "addr:postcode"]
-    
-    building_addr = pois[pois[addr_columns].notna().all(axis = 1)]
-    building_addr['addr:street'] = building_addr['addr:street'].str.lower()
-    building_addr['addr:housenumber'] = building_addr['addr:housenumber'].str.lower()
-    building_addr_df = pd.DataFrame(building_addr)
-    
-    merged_on_addr = pd.merge(price_coordinates_data, building_addr_df, left_on = ['street', 'primary_addressable_object_name'], right_on = ['addr:street', 'addr:housenumber'], how = 'inner')
-    buildings_not_merged_df = price_coordinates_data[~price_coordinates_data.index.isin(merged_on_addr.index)]
-    pois_df = pd.DataFrame(pois)
-    buildings_not_merged_df['osmid'] = np.nan
-    for index, row in buildings_not_merged_df.iterrows(): 
-        db_id = row['db_id']
-        longitude, latitude = row['longitude'], row['latitude']
-        if pois_df[pois_df['geometry'].apply(lambda x: x.contains(Point(longitude, latitude)))].empty:
-            continue
-        else:
-            buildings_not_merged_df.loc[buildings_not_merged_df['db_id'] == db_id, 'osmid'] = pois_df[pois_df['geometry'].apply(lambda x: x.contains(Point(longitude, latitude)))].index[0][1]
-    merged_alt_df = pd.merge(buildings_not_merged_df, pois_df, on = 'osmid')
-    full_merged = pd.concat([merged_on_addr, merged_alt_df])
-    full_merged = full_merged.set_index('db_id')
-    return full_merged
+def plot_corr_matrix(data_df):
+    """
+        Given a dataframe with multiple features (that can include labels), plot the correlation matrix between the features
+    """ 
+    feature_df = {feature: data_df[feature].values.tolist() for feature in data_df.columns.values}
+    feature_df = pd.DataFrame(feature_df)
+    corr_matrix = feature_df.corr()
+    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5)
 
-def tag_contains_key(dict_str, key, vals): 
-    dict_obj = ast.literal_eval(dict_str)
-    if vals== True: 
-        return key in dict_obj
-    elif isinstance(vals, list): 
-        return key in dict_obj and any(dict_obj[key] == val for val in vals)
-    return (key in dict_obj and dict_obj[key] == vals)
 
-def find_poi_count_oa(osm_nodes, connection, oa_id, distance_km, tag_keys):
-    cur = connection.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select oa_id, lsoa_id, latitude, longitude, ST_AsText(geometry) as geom from oa_boundary_data where oa_id = '{oa_id}'")
-    oa_df = cur.fetchall()[0]
-    latitude, longitude = float(oa_df['latitude']), float(oa_df['longitude'])
-    box_width = distance_km / 111
-    box_height = distance_km / (111 * np.cos(np.radians(latitude)))
-    north = latitude + box_width/2
-    south = latitude - box_width/2
-    east = longitude + box_height/2
-    west = longitude - box_height/2
-    poi_nodes = osm_nodes[(osm_nodes['lat'] >= south) & (osm_nodes['lat'] <= north) & (osm_nodes['long'] >= west) & (osm_nodes['long'] <= east)]
-    poi_nodes = poi_nodes[poi_nodes['tags'].apply(lambda x : tag_contains_key(x, tag_keys))]
-    return poi_nodes.shape[0]
+# TASK 1. PREDICT STUDENT POPULATION   
+def find_all_student_poi_counts(poi_dfs, oa_poi_df, tags): 
+    """
+        Given a list of POI gdfs with the OA boundary gdf, find the number of POIs that is within an OA boundary
+        param: poi_dfs - list of osm node gdfs with index = 'OA21CD'
+    """
+    poi_counts = []
+    for i in range(len(poi_dfs)):
+        poi_df = poi_dfs[i]
+        tag = tags[i]
+        poi_counts.append(find_student_poi_count(poi_df, oa_poi_df, tag))
+    all_poi_counts = pd.concat(poi_counts)
+    all_poi_counts = all_poi_counts.fillna(0)
+    return all_poi_counts
 
-def find_pois_oa(osm_nodes, connection, oa_id, distance_km, tag_keys):
-    cur = connection.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select oa_id, lsoa_id, latitude, longitude, ST_AsText(geometry) as geom from oa_boundary_data where oa_id = '{oa_id}'")
-    oa_df = cur.fetchall()[0]
-    latitude, longitude = float(oa_df['latitude']), float(oa_df['longitude'])
-    box_width = distance_km / 111
-    box_height = distance_km / (111 * np.cos(np.radians(latitude)))
-    north = latitude + box_width/2
-    south = latitude - box_width/2
-    east = longitude + box_height/2
-    west = longitude - box_height/2
-    poi_nodes = osm_nodes[(osm_nodes['lat'] >= south) & (osm_nodes['lat'] <= north) & (osm_nodes['long'] >= west) & (osm_nodes['long'] <= east)]
-    poi_nodes = poi_nodes[poi_nodes['tags'].apply(lambda x : tag_contains_key(x, tag_keys))]
-    return gpd.GeoDataFrame(poi_nodes, geometry = gpd.points_from_xy(poi_nodes['long'], poi_nodes['lat']))
-    
-def find_pois_rgn(osm_nodes, latitude, longitude, box_width, box_height, tag_keys): 
-    north = latitude + box_width/2
-    south = latitude - box_width/2
-    east = longitude + box_height/2
-    west = longitude - box_height/2
-    poi_nodes = osm_nodes[(osm_nodes['lat'] >= south) & (osm_nodes['lat'] <= north) & (osm_nodes['long'] >= west) & (osm_nodes['long'] <= east)]
-    poi_nodes = poi_nodes[poi_nodes['tags'].apply(lambda x : tag_contains_key(x, tag_keys))]
-    return poi_nodes
-   
-def find_houses_lsoa(connection, lsoa_id, distance_km):
-    cur = connection.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select oa_id, lsoa_id, latitude, longitude, ST_AsText(geometry) as geom from oa_boundary_data where lsoa_id = '{lsoa_id}'")
-    houses_df = []
-    oa_df = cur.fetchall()
-    for df in oa_df: 
-        latitude, longitude = float(df['latitude']), float(df['longitude'])
-        box_width = distance_km / 111
-        box_height = distance_km / (111 * np.cos(np.radians(latitude)))
-        house_oa = join_prices_coordinates_oa_osm_data(connection, latitude, longitude, distance_km)
-        houses_df.append(house_oa)
-    if len(houses_df) == 0: 
-        return 
-    return pd.concat(houses_df)
+def find_student_poi_count(poi_df, oa_poi_df, tag): 
+    joined_poi_oa = gpd.sjoin(oa_poi_df, poi_df, predicate = 'contains')
+    oa_counts = joined_poi_oa.groupby('OA21CD').size()
+    oa_counts = oa_counts.rename(columns = {0 : tag})
+    return oa_counts
 
-def find_all_poi_count_oa(connection, oa_id, tags): 
-    oa_pois = []
-    cur = connection.cursor(pymysql.cursors.DictCursor)
-    for key, val in tags.items(): 
-        node_query = f"""
-            select * from osm_nodes_data where JSON_VALUE(tags, '%.{key}') = '{val}'
-        """
-        cur.execute(node_query)
-        osm_nodes = cur.fetchall()
-        osm_nodes['query_tag'] = f"{key}:{val}"
-        oa_pois.append(osm_nodes)
-    oa_poi_count = pd.concat(oa_pois)
-    return oa_poi_count
+# TASK 2: TRANSPORT FACILITY EFFECT ON HOUSE PRICES
 
 def find_houses_lsoa(connection, lsoa_id, distance_km):
     cur = connection.cursor(pymysql.cursors.DictCursor)
@@ -437,9 +318,56 @@ def find_dist_house_corr_lsoa(connection, num_lsoas, all_lsoa_ids):
 def find_avg_distance(house_point, transport_df):
     distances = transport_df.distance(house_point)
     return distances.mean()
- 
-def find_poi_counts(poi_df, oa_poi_df, tag): 
-    joined_poi_oa = gpd.sjoin(oa_poi_df, poi_df, predicate = 'contains')
-    oa_counts = joined_poi_oa.groupby('OA21CD').size().reset_index()
-    oa_counts = oa_counts.rename(columns = {0 : tag})
-    return oa_counts
+
+
+def get_prices_coordinates_oa_from_coords(conn, latitude, longitude, distance_km =1):
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    box_width = distance_km / 111
+    box_height = distance_km / (111 * np.cos(np.radians(latitude)))
+    north = latitude + box_width/2
+    south = latitude - box_width/2
+    east = longitude + box_height/2
+    west = longitude - box_height/2
+    query = f"SELECT * FROM `prices_coordinates_oa_data` where latitude BETWEEN {south} and {north} and longitude BETWEEN {west} and {east} and date_of_transfer >= '2015-01-01'"
+    # query = f'''
+    # SELECT *
+    # FROM `pp_data` AS pp 
+    # INNER JOIN `postcode_data` AS po 
+    # ON pp.postcode = po.postcode
+    # WHERE latitude BETWEEN {south} and {north} and longitude BETWEEN {west} and {east}'''
+    cur.execute(query)
+    price_coordinates_data = cur.fetchall()
+    return pd.DataFrame(price_coordinates_data)
+
+
+def join_prices_coordinates_osm_data(conn, bbox): 
+    """
+        Given a bounding box, finds building:residential OSM POIs, and joins them on price coordinates data based on both address and the coordinates
+        such that if the coordinates of prices_coordinates_data fall within building:residential POI node, the two are joined together
+    """
+    price_coordinates_data = get_prices_coordinates_from_coords(conn, bbox)
+    price_coordinates_data['street'] = price_coordinates_data['street'].str.lower()
+    price_coordinates_data['primary_addressable_object_name'] = price_coordinates_data['primary_addressable_object_name'].str.lower()
+
+    pois = find_houses_bbox(bbox)
+    addr_columns = ["addr:housenumber","addr:street"]
+    
+    building_addr = pois[pois[addr_columns].notna().all(axis = 1)]
+    building_addr['addr:street'] = building_addr['addr:street'].str.lower()
+    building_addr['addr:housenumber'] = building_addr['addr:housenumber'].str.lower()
+    building_addr_df = pd.DataFrame(building_addr)
+    
+    merged_on_addr = pd.merge(price_coordinates_data, building_addr_df, left_on = ['street', 'primary_addressable_object_name'], right_on = ['addr:street', 'addr:housenumber'], how = 'inner')
+    buildings_not_merged_df = price_coordinates_data[~price_coordinates_data.index.isin(merged_on_addr.index)]
+    pois_df = pd.DataFrame(pois)
+    buildings_not_merged_df['osmid'] = np.nan
+    for index, row in buildings_not_merged_df.iterrows(): 
+        db_id = row['db_id']
+        longitude, latitude = row['longitude'], row['latitude']
+        if pois_df[pois_df['geometry'].apply(lambda x: x.contains(Point(longitude, latitude)))].empty:
+            continue
+        else:
+            buildings_not_merged_df.loc[buildings_not_merged_df['db_id'] == db_id, 'osmid'] = pois_df[pois_df['geometry'].apply(lambda x: x.contains(Point(longitude, latitude)))].index[0][1]
+    merged_alt_df = pd.merge(buildings_not_merged_df, pois_df, on = 'osmid')
+    full_merged = pd.concat([merged_on_addr, merged_alt_df])
+    return full_merged
