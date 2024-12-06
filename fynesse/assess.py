@@ -225,7 +225,7 @@ def find_all_poi_counts(poi_dfs, oa_poi_df, tags):
         poi_df = poi_dfs[i]
         tag = tags[i]
         poi_counts.append(find_student_poi_count(poi_df, oa_poi_df, tag).set_index('OA21CD'))
-    all_poi_counts = pd.concat(poi_counts)
+    all_poi_counts = pd.concat(poi_counts, axis  = 1)
     all_poi_counts = all_poi_counts.fillna(0)
     return all_poi_counts
 
