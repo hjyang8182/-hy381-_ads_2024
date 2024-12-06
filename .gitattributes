@@ -1,2 +1,0 @@
-houses.osm.pbf filter=lfs diff=lfs merge=lfs -text
-*.osm.pbf filter=lfs diff=lfs merge=lfs -text
