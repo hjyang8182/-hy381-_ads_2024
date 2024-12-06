@@ -12,7 +12,6 @@ from shapely.geometry import box
 import numpy as np
 from shapely import Polygon
 import csv
-import subprocess
 """These are the types of import we might expect in this file
 import httplib2
 import oauth2
@@ -151,27 +150,15 @@ def upload_joined_house_oa(connection, year):
     connection.close()
 
 def find_houses_bbox(bbox_coords):
-  """ Given a bounding box, finds the POIs within the bbox tagged with 'building=residential'
+   """ Given a bounding box, finds the POIs within the bbox tagged with 'building=residential'
    :param bbox_coords: (west, south, east, north) coordinates 
    :return: GDF with the POIs 
-  """
-  current_dir = os.path.dirname(__file__)
-  data_dir = os.path.join(current_dir, 'data')
-  osm_path = os.path.join(data_dir, 'houses.osm.pbf')
-  bbox_houses = gpd.read_file(osm_path, bbox = bbox_coords)
-  west, south, east, north = bbox_coords
-  find_house_command = f"osmium extract -b {west},{south},{east},{north} {osm_path} -o houses_bbox.osm.pbf"
-  house_bbox_path = os.path.join(data_dir, 'houses_bbox.osm.pbf')
-  geojson_path = os.path.join(data_dir, 'houses_bbox.geojson')
-  export_house = f"osmium export {house_bbox_path} -o houses_bbox.geojson"
-  try: 
-    result1 = subprocess.run(find_house_command)
-    result2 = subprocess.run(export_house)
-    bbox_houses = gpd.read_file(geojson_path)
-  except subprocess.CalledProcessError as e:
-    print(f"Error occurred: {e}")
-    print(f"Error output: {e.stderr}")
-  return bbox_houses
+   """
+   current_dir = os.path.dirname(__file__)
+   data_dir = os.path.join(current_dir, 'data')
+   osm_path = os.path.join(data_dir, 'houses.geojson')
+   bbox_houses = gpd.read_file(osm_path, bbox = bbox_coords)
+   return bbox_houses
 
 def get_bbox_for_region(region_geometry): 
     '''
@@ -190,4 +177,23 @@ def get_bbox_for_region(region_geometry):
     box_height = max_y - min_y
     longitude = centroid.x
     latitude = centroid.y
+<<<<<<< HEAD
   
+=======
+    north = latitude + box_width/2
+    south = latitude - box_width/2
+    east = longitude + box_height/2
+    west = longitude - box_height/2
+    return (west, south, east, north)
+
+def create_bbox_polygon(row, distance_km): 
+    polygon = row['geometry']
+    longitude, latitude = row['LONG'], row['LAT']
+    box_width = distance_km / 111
+    box_height = distance_km / (111 * np.cos(np.radians(latitude)))
+    north = latitude + box_width/2
+    south = latitude - box_width/2
+    east = longitude + box_height/2
+    west = longitude - box_height/2
+    return Polygon([(west, south), (east, south), (east, north), (west, north)])
+>>>>>>> parent of 4719688 (add findhousesbox)
