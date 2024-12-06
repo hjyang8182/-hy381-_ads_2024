@@ -204,7 +204,6 @@ def find_correlations_with_house_prices(merged_df, latitude, longitude):
     plt.ylabel("Price")
     sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5)
 
-
 def plot_corr_matrix(data_df):
     """
         Given a dataframe with multiple features (that can include labels), plot the correlation matrix between the features

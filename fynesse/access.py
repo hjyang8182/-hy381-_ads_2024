@@ -156,7 +156,7 @@ def find_houses_bbox(bbox_coords):
    """
    current_dir = os.path.dirname(__file__)
    data_dir = os.path.join(current_dir, 'data')
-   osm_path = os.path.join(data_dir, 'building_residential.osm.pbf')
+   osm_path = os.path.join(data_dir, 'houses.geojson')
    bbox_houses = gpd.read_file(osm_path, bbox = bbox_coords)
    return bbox_houses
 
