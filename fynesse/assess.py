@@ -370,5 +370,4 @@ def join_prices_coordinates_osm_data(conn, bbox):
         else:
             buildings_not_merged_df.loc[buildings_not_merged_df['db_id'] == db_id, 'osmid'] = pois_df[pois_df['geometry'].apply(lambda x: x.contains(Point(longitude, latitude)))].index[0][1]
     merged_alt_df = pd.merge(buildings_not_merged_df, pois_df, on = 'osmid')
-    full_merged = pd.concat([merged_on_addr, merged_alt_df])
-    return full_merged
+    full_merged = pd.concat([m
