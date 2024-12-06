@@ -177,9 +177,6 @@ def get_bbox_for_region(region_geometry):
     box_height = max_y - min_y
     longitude = centroid.x
     latitude = centroid.y
-<<<<<<< HEAD
-  
-=======
     north = latitude + box_width/2
     south = latitude - box_width/2
     east = longitude + box_height/2
@@ -196,4 +193,3 @@ def create_bbox_polygon(row, distance_km):
     east = longitude + box_height/2
     west = longitude - box_height/2
     return Polygon([(west, south), (east, south), (east, north), (west, north)])
->>>>>>> parent of 4719688 (add findhousesbox)
