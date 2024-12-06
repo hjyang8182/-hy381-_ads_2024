@@ -260,18 +260,18 @@ def find_transport_lsoa(connection, lsoa_id):
     oa_df = cur.fetchall()
     return pd.DataFrame(oa_df)
 
-def find_transaction_lsoa(connection, lsoa_name):
+def find_transaction_lsoa(connection, lsoa_id):
     cur = connection.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select lsoa_name from oa_boundary_data where lsoa_id = '{lsoa_id}'")
+    lsoa_name = cur.fetchall()[0]
+    lsoa_name = lsoa_name['lsoa_name']
     cur.execute(f"select * from prices_coordinates_oa_data where lsoa_name = '{lsoa_name}'")
     lsoa_houses = cur.fetchall()
     return pd.DataFrame(lsoa_houses)
 
 def plot_house_price_changes(connection, lsoa_id):
     cur = connection.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select lsoa_name from oa_boundary_data where lsoa_id = '{lsoa_id}'")
-    lsoa_name = cur.fetchall()[0]
-    lsoa_name = lsoa_name['lsoa_name']
-    houses_df = find_transaction_lsoa(connection, lsoa_name)
+    houses_df = find_transaction_lsoa(connection, lsoa_id)
     transport_df = find_transport_lsoa(connection, lsoa_id)
     creation_dates = np.unique(transport_df.creation_date.values)
     house_groups = houses_df.groupby(['street','primary_addressable_object_name', 'secondary_addressable_object_name'])[['price', 'date_of_transfer', 'oa_id']]
@@ -300,9 +300,13 @@ def plot_house_price_changes(connection, lsoa_id):
                 tick.set_rotation(45)  # Rotate tick labels by 45 degrees
     plt.tight_layout()
 
-def find_dist_house_corr_lsoa(connection, transport_lsoa, houses_lsoa):
+def find_dist_house_corr_lsoa(connection, lsoa_id, transport_lsoa, house_lsoa):
     avg_distances = np.array([])
     prices = np.array([])
+    cur = connection.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select lsoa_name from oa_boundary data where lsoa_id = {lsoa_id}")
+    lsoa_name = cur.fetchall()[0]['lsoa_name']
+    houses_lsoa = find_transaction_lsoa(lsoa_name)
     houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
     houses_lsoa['avg_distance'] = houses_lsoa.geometry.apply(lambda house: find_avg_distance(house, transport_lsoa))
     avg_distances = np.append(avg_distances, houses_lsoa['avg_distance'].values)
