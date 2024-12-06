@@ -215,7 +215,7 @@ def plot_corr_matrix(data_df):
 
 
 # TASK 1. PREDICT STUDENT POPULATION   
-def find_all_student_poi_counts(poi_dfs, oa_poi_df, tags): 
+def find_all_poi_counts(poi_dfs, oa_poi_df, tags): 
     """
         Given a list of POI gdfs with the OA boundary gdf, find the number of POIs that is within an OA boundary
         param: poi_dfs - list of osm node gdfs with index = 'OA21CD'
@@ -224,7 +224,7 @@ def find_all_student_poi_counts(poi_dfs, oa_poi_df, tags):
     for i in range(len(poi_dfs)):
         poi_df = poi_dfs[i]
         tag = tags[i]
-        poi_counts.append(find_student_poi_count(poi_df, oa_poi_df, tag))
+        poi_counts.append(find_student_poi_count(poi_df, oa_poi_df, tag).set_index('OA21CD'))
     all_poi_counts = pd.concat(poi_counts)
     all_poi_counts = all_poi_counts.fillna(0)
     return all_poi_counts
@@ -232,8 +232,10 @@ def find_all_student_poi_counts(poi_dfs, oa_poi_df, tags):
 def find_student_poi_count(poi_df, oa_poi_df, tag): 
     joined_poi_oa = gpd.sjoin(oa_poi_df, poi_df, predicate = 'contains')
     oa_counts = joined_poi_oa.groupby('OA21CD').size()
+    oa_counts = oa_counts.reset_index()
     oa_counts = oa_counts.rename(columns = {0 : tag})
     return oa_counts
+
 
 # TASK 2: TRANSPORT FACILITY EFFECT ON HOUSE PRICES
 
