@@ -300,18 +300,17 @@ def plot_house_price_changes(connection, lsoa_id):
                 tick.set_rotation(45)  # Rotate tick labels by 45 degrees
     plt.tight_layout()
 
-def find_dist_house_corr_lsoa(connection, num_lsoas, all_lsoa_ids):
-    sample_lsoas = np.random.choice(all_lsoa_ids, num_lsoas, replace = False)
+def find_dist_house_corr_lsoa(connection, lsoa_id, transport_lsoa, house_lsoa):
     avg_distances = np.array([])
     prices = np.array([])
-    for lsoa_id in sample_lsoas: 
-        houses_lsoa = find_houses_lsoa(connection, lsoa_id, 3)
-        transport_lsoa = find_transport_lsoa(connection, lsoa_id)
-        houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
-        transport_lsoa = gpd.GeoDataFrame(transport_lsoa, geometry = gpd.points_from_xy(transport_lsoa['longitude'], transport_lsoa['latitude']))
-        houses_lsoa['avg_distance'] = houses_lsoa.geometry.apply(lambda house: find_avg_distance(house, transport_lsoa))
-        avg_distances = np.append(avg_distances, houses_lsoa['avg_distance'].values)
-        prices = np.append(prices, houses_lsoa['price'].values)
+    cur = connection.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select lsoa_name from oa_boundary data where lsoa_id = {lsoa_id}")
+    lsoa_name = cur.fetchall()[0]['lsoa_name']
+    houses_lsoa = find_transaction_lsoa(connection, lsoa_name)
+    houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
+    houses_lsoa['avg_distance'] = houses_lsoa.geometry.apply(lambda house: find_avg_distance(house, transport_lsoa))
+    avg_distances = np.append(avg_distances, houses_lsoa['avg_distance'].values)
+    prices = np.append(prices, houses_lsoa['price'].values)
     plt.figure()
     plt.scatter(avg_distances, prices)
     return avg_distances, prices
@@ -319,7 +318,6 @@ def find_dist_house_corr_lsoa(connection, num_lsoas, all_lsoa_ids):
 def find_avg_distance(house_point, transport_df):
     distances = transport_df.distance(house_point)
     return distances.mean()
-
 
 def get_prices_coordinates_oa_from_coords(conn, latitude, longitude, distance_km =1):
     cur = conn.cursor(pymysql.cursors.DictCursor)
@@ -372,3 +370,47 @@ def join_prices_coordinates_osm_data(conn, bbox):
     merged_alt_df = pd.merge(buildings_not_merged_df, pois_df, on = 'osmid')
     full_merged = pd.concat([merged_on_addr, merged_alt_df])
     return full_merged
+
+def get_lsoa_house_clusters(houses_lsoa): 
+    property_types = ['D', 'S', 'T', 'F', 'O']
+    property_labels = {'D': 0, 'S': 1, 'T': 2, 'F': 3, 'O': 4}
+    houses_oa = houses_lsoa[houses_lsoa['area_m2'].notna()]
+    areas = houses_oa['area_m2'].values
+    new_builds = np.where(houses_oa['new_build_flag'] == 'N', 1, 0)
+    property_types = [property_labels[property_type] for property_type in houses_oa['property_type'].values]
+    features = np.column_stack((property_types, new_builds, areas))
+    import scipy.cluster.hierarchy as sch
+    from sklearn.cluster import AgglomerativeClustering
+
+    clustering = AgglomerativeClustering(linkage='ward')
+    labels = clustering.fit_predict(features)
+
+    # Dendrogram (to visualize the hierarchical structure)
+    linkage_matrix = sch.linkage(features, method='ward')
+    plt.figure(figsize=(10, 7))
+    sch.dendrogram(linkage_matrix)
+    plt.show()
+    y_threshold = 20 # Cut the dendrogram at y = 5
+
+    # Get the cluster labels for each data point by cutting at the threshold
+    clusters = sch.fcluster(linkage_matrix, t=y_threshold, criterion='distance')
+    return clusters
+
+def plot_prices_and_clusters(connection, lsoa_id, y_threshold=20): 
+    cur = connection.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select lsoa_name from oa_boundary_data where lsoa_id = '{lsoa_id}'")
+    lsoa_name = cur.fetchall()[0]['lsoa_name']
+    houses_lsoa = find_houses_lsoa(connection, lsoa_id, 2)
+    houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = 'geometry')
+    clusters = get_lsoa_house_clusters(houses_lsoa)
+    houses_lsoa['clusters'] = clusters
+    cur.execute(f"select * from transport_node_data where lsoa_id = '{lsoa_id}'")
+    transport_nodes_lsoa = cur.fetchall()
+    transport_nodes_coords = list(map(lambda n: (n['longitude'], n['latitude']), transport_nodes_lsoa))
+    fig, ax = plt.subplots(1, 2)
+    houses_lsoa.plot(column = 'clusters', ax = ax[0], legend = True, cmap = 'tab20')
+    houses_lsoa.plot(column = 'price', ax = ax[1], legend = True, cmap = 'YlOrRd')
+    for coord in transport_nodes_coords:
+        ax[0].scatter(coord[0], coord[1], color = 'red')
+    ax[0].set_title(f"Clusters for houses in {lsoa_name}")
+    ax[1].set_title(f"Prices and Transport Nodes for Houses in {lsoa_name}")
