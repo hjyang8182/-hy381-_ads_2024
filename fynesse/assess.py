@@ -238,7 +238,7 @@ def find_student_poi_count(poi_df, oa_poi_df, tag):
 
 
 # TASK 2: TRANSPORT FACILITY EFFECT ON HOUSE PRICES
-def join_osm_transaction_data(osm_df, transaction_df): 
+def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFrame): 
     transaction_df['street'] = transaction_df['street'].str.lower()
     transaction_df['primary_addressable_object_name'] = transaction_df['primary_addressable_object_name'].str.lower()
 
