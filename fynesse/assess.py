@@ -238,6 +238,25 @@ def find_student_poi_count(poi_df, oa_poi_df, tag):
 
 
 # TASK 2: TRANSPORT FACILITY EFFECT ON HOUSE PRICES
+def join_osm_transaction_data(osm_df, transaction_df): 
+    transaction_df['street'] = transaction_df['street'].str.lower()
+    transaction_df['primary_addressable_object_name'] = transaction_df['primary_addressable_object_name'].str.lower()
+
+    addr_columns = ["addr:housenumber","addr:street"]
+    
+    building_addr = osm_df[osm_df[addr_columns].notna().all(axis = 1)]
+    building_addr['addr:street'] = building_addr['addr:street'].str.lower()
+    building_addr['addr:housenumber'] = building_addr['addr:housenumber'].str.lower()
+    building_addr_df = pd.DataFrame(building_addr)
+    
+    merged_on_addr = pd.merge(transaction_df, building_addr_df, left_on = ['street', 'primary_addressable_object_name'], right_on = ['addr:street', 'addr:housenumber'], how = 'inner')
+
+    transactions_not_merged = transaction_df[~transaction_df.index.isin(merged_on_addr.index)]
+    transactions_not_merged = gpd.GeoDataFrame(transactions_not_merged, geometry = gpd.points_from_xy(transactions_not_merged['longitude'], transactions_not_merged['latitude']))
+    merged_on_coord = gpd.sjoin(transactions_not_merged, osm_df, transaction_df, predicate = 'within')
+    merged_on_coord.drop(columns = ['right_index'])
+    full_merged = pd.concat([merged_on_addr, merged_on_coord])
+    return full_merged
 
 def find_houses_lsoa(connection, lsoa_id, distance_km):
     cur = connection.cursor(pymysql.cursors.DictCursor)
