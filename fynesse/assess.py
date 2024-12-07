@@ -262,10 +262,7 @@ def find_transport_lsoa(connection, lsoa_id):
 
 def find_transaction_lsoa(connection, lsoa_id):
     cur = connection.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select lsoa_name from oa_boundary_data where lsoa_id = '{lsoa_id}'")
-    lsoa_name = cur.fetchall()[0]
-    lsoa_name = lsoa_name['lsoa_name']
-    cur.execute(f"select * from prices_coordinates_oa_data where lsoa_name = '{lsoa_name}'")
+    cur.execute(f"select * from prices_coordinates_oa_data where lsoa_id = '{lsoa_id}'")
     lsoa_houses = cur.fetchall()
     return pd.DataFrame(lsoa_houses)
 
