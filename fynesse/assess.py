@@ -253,7 +253,7 @@ def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFram
 
     transactions_not_merged = transaction_df[~transaction_df.index.isin(merged_on_addr.index)]
     transactions_not_merged = gpd.GeoDataFrame(transactions_not_merged, geometry = gpd.points_from_xy(transactions_not_merged['longitude'], transactions_not_merged['latitude']))
-    merged_on_coord = gpd.sjoin(transactions_not_merged, osm_df, transaction_df, predicate = 'within')
+    merged_on_coord = gpd.sjoin(transactions_not_merged, osm_df, predicate = 'within')
     merged_on_coord.drop(columns = ['right_index'])
     full_merged = pd.concat([merged_on_addr, merged_on_coord])
     return full_merged
