@@ -285,7 +285,8 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries):
     transport_gdf = gpd.GeoDataFrame(transport_pois, geometry = gpd.points_from_xy(transport_pois['longitude'], transport_pois['latitude']))
     house_transactions = find_transaction_bbox(conn, lad_bbox)
     osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
-    lad_gdf = gpd.GeoDataFrame({'geometry': lad_geom})
+    lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
+
     osm_prices_merged = gpd.sjoin(osm_prices_merged, lad_gdf, predicate = 'within')
     fig, ax = plt.subplots()
     lad_gdf.plot(ax = ax, facecolor = 'white', edgecolor = 'dimgray')
