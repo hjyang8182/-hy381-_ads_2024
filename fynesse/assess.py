@@ -265,10 +265,19 @@ def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFram
     full_merged['price_log'] = np.log(full_merged['price'])
     return full_merged
 
-def find_transport_bbox(conn, bbox): 
+def find_transport_bbox(conn, bbox, transport_type): 
+    type_codes = []
+    if transport_type == 'BUS': 
+        type_codes = ('BCT', 'BCS', 'BCQ', 'BST', 'BCE', 'BCP')
+    elif transport_type == 'SUB': 
+        type_codes = ('PLT', 'MET', 'TMU')
+    elif transport_type == 'RAIL': 
+        type_codes = ('RPLY', 'RLY')
+    elif transport_type == 'AIR':
+        type_codes = ('AIR', 'GAT')
     south, east, north, west = bbox 
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select * from transport_node_data where longitude between {south} and {north} and latitude between {east} and {west} and stop_type = 'MET'")
+    cur.execute(f"select * from transport_node_data where longitude between {south} and {north} and latitude between {east} and {west} and stop_type in {type_codes}")
     transport_df = pd.DataFrame(cur.fetchall())
     return transport_df
 
