@@ -277,7 +277,7 @@ def find_transaction_bbox(conn, bbox):
 def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries): 
     buildings_gdf = find_residential_buildings(conn, lad_id, building_dfs)
     lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
-    lad_name = lad_row.name.values[0]
+    lad_name = lad_row.LAD21NM.values[0]
     lad_geom = lad_row.geometry.values[0]
     lad_bbox = lad_row.bbox.values[0]
     south, east, north, west = lad_bbox
