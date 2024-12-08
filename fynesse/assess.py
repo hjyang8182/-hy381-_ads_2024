@@ -330,6 +330,7 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, t
     osm_prices_merged = gpd.sjoin(osm_prices_merged, lad_gdf, predicate = 'within')
     fig, ax = plt.subplots()
     lad_gdf.plot(ax = ax, facecolor = 'white', edgecolor = 'dimgray')
+    osm_prices_merged = osm_prices_merged.sort_values(by='price', ascending=True)
     osm_prices_merged.plot(column = 'price_log', ax = ax, legend = True, cmap = 'viridis')
     transport_gdf.plot(ax = ax, color = 'red', markersize = 10)
 
@@ -339,7 +340,7 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, t
     plt.show()
 
 def plot_lad_prices_random_subset(conn, lad_ids, building_dfs, lad_boundaries, transport_gdf, transport_type):
-    fig, ax = plt.subplots(3, 3)
+    fig, ax = plt.subplots(3, 3, figsize=(12,12))
     for i in range(3):
         for j in range(3): 
             lad_id = lad_ids[i * j]
@@ -362,6 +363,7 @@ def plot_lad_prices_random_subset(conn, lad_ids, building_dfs, lad_boundaries, t
 
             # custom_patch = mpatches.Patch(color='red', label='Transport Facilities')
             # ax.legend(handles=[custom_patch], title="Legend")
+            plt.tight_layout()
             plt.show()
 
 def find_avg_lsoa_price_in_lad(conn, lad_id, lad_boundaries): 
@@ -479,7 +481,7 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, y_threshold=2
     transport_lsoa = find_transport_bbox(connection, lsoa_bbox)
     transport_nodes_coords = list(map(lambda n: (n['longitude'], n['latitude']), transport_lsoa))
 
-    fig, ax = plt.subplots(1, 2)
+    fig, ax = plt.subplots(1, 2, figsize = (12,12))
     houses_lsoa.plot(column = 'clusters', ax = ax[0], legend = True, cmap = 'tab20')
     houses_lsoa.plot(column = 'price', ax = ax[1], legend = True, cmap = 'YlOrRd')
     for coord in transport_nodes_coords:
