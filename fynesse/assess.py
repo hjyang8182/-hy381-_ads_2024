@@ -254,8 +254,13 @@ def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFram
 
     transactions_not_merged = transaction_df[~transaction_df.index.isin(merged_on_addr.index)]
     transactions_not_merged = gpd.GeoDataFrame(transactions_not_merged, geometry = gpd.points_from_xy(transactions_not_merged['longitude'], transactions_not_merged['latitude']))
-    merged_on_coord = gpd.sjoin_nearest(transactions_not_merged, osm_df, max_distance = 1)
-    full_merged = pd.concat([merged_on_addr, merged_on_coord])
+    merged_on_coord = gpd.sjoin_nearest(transactions_not_merged, osm_df, max_distance = 0.01)
+    
+    cols = ['price', 'date_of_transfer', 'postcode', 'property_type', 'new_build_flag', 'tenure_type', 'primary_addressable_object_name', 'secondary_addressable_object_name', 'street', 'latitude', 'longitude', 'db_id', 'geometry']
+    merged_on_addr = merged_on_addr[cols]
+    merged_on_coord = merged_on_coord[cols]
+    full_merged = pd.concat([merged_on_addr, merged_on_coord], ignore_index = True)
+    
     full_merged = gpd.GeoDataFrame(full_merged, geometry = 'geometry')
     full_merged['price_log'] = np.log(full_merged['price'])
     full_merged = full_merged.drop(columns= 'index_right')
@@ -295,8 +300,8 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries):
     osm_prices_merged.plot(column = 'price_log', ax = ax, legend = True, cmap = 'viridis')
     transport_gdf.plot(ax = ax, color = 'red', markersize = 10)
 
-    # custom_patch = mpatches.Patch(color='red', label='Transport Facilities')
-    # ax.legend(handles=[custom_patch], title="Legend")
+    custom_patch = mpatches.Patch(color='red', label='Transport Facilities')
+    ax.legend(handles=[custom_patch], title="Legend")
     plt.title(f"log Price of Houses in {lad_name}")
     plt.show()
 
@@ -313,7 +318,6 @@ def find_residential_buildings(conn, lad_id, building_dfs):
     buildings_gdf = buildings_gdf.drop_duplicates('index_right')
     buildings_gdf = buildings_gdf.drop(columns = 'index_right')
     return buildings_gdf
-
 
 
 def find_transport_lsoa(connection, lsoa_id): 
@@ -378,58 +382,6 @@ def find_avg_distance(house_point, transport_df):
     distances = transport_df.distance(house_point)
     return distances.mean()
 
-def get_prices_coordinates_oa_from_coords(conn, latitude, longitude, distance_km =1):
-    cur = conn.cursor(pymysql.cursors.DictCursor)
-    box_width = distance_km / 111
-    box_height = distance_km / (111 * np.cos(np.radians(latitude)))
-    north = latitude + box_width/2
-    south = latitude - box_width/2
-    east = longitude + box_height/2
-    west = longitude - box_height/2
-    query = f"SELECT * FROM `prices_coordinates_oa_data` where latitude BETWEEN {south} and {north} and longitude BETWEEN {west} and {east} and date_of_transfer >= '2015-01-01'"
-    # query = f'''
-    # SELECT *
-    # FROM `pp_data` AS pp 
-    # INNER JOIN `postcode_data` AS po 
-    # ON pp.postcode = po.postcode
-    # WHERE latitude BETWEEN {south} and {north} and longitude BETWEEN {west} and {east}'''
-    cur.execute(query)
-    price_coordinates_data = cur.fetchall()
-    return pd.DataFrame(price_coordinates_data)
-
-
-def join_prices_coordinates_osm_data(conn, bbox): 
-    """
-        Given a bounding box, finds building:residential OSM POIs, and joins them on price coordinates data based on both address and the coordinates
-        such that if the coordinates of prices_coordinates_data fall within building:residential POI node, the two are joined together
-    """
-    price_coordinates_data = get_prices_coordinates_from_coords(conn, bbox)
-    price_coordinates_data['street'] = price_coordinates_data['street'].str.lower()
-    price_coordinates_data['primary_addressable_object_name'] = price_coordinates_data['primary_addressable_object_name'].str.lower()
-
-    pois = find_houses_bbox(bbox)
-    addr_columns = ["addr:housenumber","addr:street"]
-    
-    building_addr = pois[pois[addr_columns].notna().all(axis = 1)]
-    building_addr['addr:street'] = building_addr['addr:street'].str.lower()
-    building_addr['addr:housenumber'] = building_addr['addr:housenumber'].str.lower()
-    building_addr_df = pd.DataFrame(building_addr)
-    
-    merged_on_addr = pd.merge(price_coordinates_data, building_addr_df, left_on = ['street', 'primary_addressable_object_name'], right_on = ['addr:street', 'addr:housenumber'], how = 'inner')
-    buildings_not_merged_df = price_coordinates_data[~price_coordinates_data.index.isin(merged_on_addr.index)]
-    pois_df = pd.DataFrame(pois)
-    buildings_not_merged_df['osmid'] = np.nan
-    for index, row in buildings_not_merged_df.iterrows(): 
-        db_id = row['db_id']
-        longitude, latitude = row['longitude'], row['latitude']
-        if pois_df[pois_df['geometry'].apply(lambda x: x.contains(Point(longitude, latitude)))].empty:
-            continue
-        else:
-            buildings_not_merged_df.loc[buildings_not_merged_df['db_id'] == db_id, 'osmid'] = pois_df[pois_df['geometry'].apply(lambda x: x.contains(Point(longitude, latitude)))].index[0][1]
-    merged_alt_df = pd.merge(buildings_not_merged_df, pois_df, on = 'osmid')
-    full_merged = pd.concat([merged_on_addr, merged_alt_df])
-    return full_merged
-
 def get_lsoa_house_clusters(houses_lsoa): 
     property_types = ['D', 'S', 'T', 'F', 'O']
     property_labels = {'D': 0, 'S': 1, 'T': 2, 'F': 3, 'O': 4}
@@ -446,26 +398,30 @@ def get_lsoa_house_clusters(houses_lsoa):
 
     # Dendrogram (to visualize the hierarchical structure)
     linkage_matrix = sch.linkage(features, method='ward')
-    plt.figure(figsize=(10, 7))
-    sch.dendrogram(linkage_matrix)
-    plt.show()
+    # plt.figure(figsize=(10, 7))
+    # sch.dendrogram(linkage_matrix)
+    # plt.show()
     y_threshold = 20 # Cut the dendrogram at y = 5
 
     # Get the cluster labels for each data point by cutting at the threshold
     clusters = sch.fcluster(linkage_matrix, t=y_threshold, criterion='distance')
     return clusters
 
-def plot_prices_and_clusters(connection, lsoa_id, y_threshold=20): 
-    cur = connection.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select lsoa_name from oa_boundary_data where lsoa_id = '{lsoa_id}'")
-    lsoa_name = cur.fetchall()[0]['lsoa_name']
-    houses_lsoa = find_houses_lsoa(connection, lsoa_id, 2)
-    houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = 'geometry')
+def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, y_threshold=20): 
+    lsoa_row = lsoa_boundaries[lsoa_boundaries['LSOA21CD'] == lsoa_id]
+    lsoa_name = lsoa_row.LAD21NM.values[0]
+    lsoa_geom = lsoa_row.geometry.values[0]
+    lsoa_bbox = lsoa_row.bbox.values[0]
+
+    houses_lsoa = find_transaction_bbox(connection, lsoa_bbox)
+    houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
+
     clusters = get_lsoa_house_clusters(houses_lsoa)
     houses_lsoa['clusters'] = clusters
-    cur.execute(f"select * from transport_node_data where lsoa_id = '{lsoa_id}'")
-    transport_nodes_lsoa = cur.fetchall()
-    transport_nodes_coords = list(map(lambda n: (n['longitude'], n['latitude']), transport_nodes_lsoa))
+
+    transport_lsoa = find_transport_bbox(connection, lsoa_bbox)
+    transport_nodes_coords = list(map(lambda n: (n['longitude'], n['latitude']), transport_lsoa))
+
     fig, ax = plt.subplots(1, 2)
     houses_lsoa.plot(column = 'clusters', ax = ax[0], legend = True, cmap = 'tab20')
     houses_lsoa.plot(column = 'price', ax = ax[1], legend = True, cmap = 'YlOrRd')
