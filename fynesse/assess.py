@@ -265,7 +265,7 @@ def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFram
     full_merged['price_log'] = np.log(full_merged['price'])
     return full_merged
 
-def find_transport_bbox(conn, bbox, transport_type): 
+def find_transport_bbox(transport_gdf, lad_gdf, transport_type): 
     type_codes = []
     if transport_type == 'BUS': 
         type_codes = ('BCT', 'BCS', 'BCQ', 'BST', 'BCE', 'BCP')
@@ -275,11 +275,13 @@ def find_transport_bbox(conn, bbox, transport_type):
         type_codes = ('RPLY', 'RLY')
     elif transport_type == 'AIR':
         type_codes = ('AIR', 'GAT')
-    south, east, north, west = bbox 
-    cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select * from transport_node_data where longitude between {south} and {north} and latitude between {east} and {west} and stop_type in {type_codes}")
-    transport_df = pd.DataFrame(cur.fetchall())
-    return transport_df
+    # Transport node data seems to be missing a lot of values
+    # cur = conn.cursor(pymysql.cursors.DictCursor)
+    # cur.execute(f"select * from transport_node_data where longitude between {south} and {north} and latitude between {east} and {west} and stop_type in {type_codes}")
+    transport_gdf = gpd.sjoin(transport_gdf, lad_gdf, predicate = 'within', how = 'left')
+    transport_gdf = transport_gdf[np.isin(transport_gdf['StopType'], type_codes)]
+
+    return transport_gdf
 
 def find_transaction_bbox(conn, bbox): 
     south, east, north, west = bbox 
@@ -288,7 +290,7 @@ def find_transaction_bbox(conn, bbox):
     transaction_df = pd.DataFrame(cur.fetchall())
     return transaction_df
 
-def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_type):
+def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, transport_type):
     """
         transport type: 
             'BUS' :  bus stops, station entrances
@@ -303,9 +305,8 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_type):
     lad_bbox = lad_row.bbox.values[0]
     lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
 
-    transport_pois = find_transport_bbox(conn, lad_bbox, transport_type)
-    transport_gdf = gpd.GeoDataFrame(transport_pois, geometry = gpd.points_from_xy(transport_pois['longitude'], transport_pois['latitude']))
     transport_gdf = gpd.sjoin(transport_gdf, lad_gdf, predicate = 'within')
+    transport_gdf = transport_gdf[np.isin(transport_gdf['StopType']]
     house_transactions = find_transaction_bbox(conn, lad_bbox)
     osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
 
