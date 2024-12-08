@@ -335,9 +335,6 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, t
     plt.title(f"log Price of Houses in {lad_name}")
     plt.show()
 
-d
-
-
 def find_transport_lsoa(connection, lsoa_id): 
     cur = connection.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"select * from transport_node_data where lsoa_id = '{lsoa_id}'")
