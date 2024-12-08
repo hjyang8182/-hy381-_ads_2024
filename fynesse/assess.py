@@ -337,6 +337,45 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, t
     plt.title(f"log Price of Houses in {lad_name}")
     plt.show()
 
+def plot_lad_prices_random_subset(conn, lad_ids, building_dfs, lad_boundaries, transport_gdf, transport_type):
+    fig, ax = plt.subplots(3, 3)
+    for i in range(3):
+        for j in range(3): 
+            lad_id = lad_ids[i * j]
+            buildings_gdf = find_residential_buildings(conn, lad_id, building_dfs)
+            lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
+            lad_name = lad_row.LAD21NM.values[0]
+            lad_geom = lad_row.geometry.values[0]
+            lad_bbox = lad_row.bbox.values[0]
+            lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
+
+            transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, transport_type)
+            house_transactions = find_transaction_bbox(conn, lad_bbox)
+            osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
+
+            osm_prices_merged = gpd.sjoin(osm_prices_merged, lad_gdf, predicate = 'within')
+            lad_gdf.plot(ax = ax[i,j], facecolor = 'white', edgecolor = 'dimgray')
+            osm_prices_merged.plot(column = 'price_log', ax = ax[i,j], legend = True, cmap = 'viridis')
+            transport_gdf.plot(ax = ax[i,j], color = 'red', markersize = 10)
+
+            # custom_patch = mpatches.Patch(color='red', label='Transport Facilities')
+            # ax.legend(handles=[custom_patch], title="Legend")
+            plt.title(f"log Price of Houses in {lad_name}")
+            plt.show()
+
+def find_avg_lsoa_price_in_lad(conn, lad_id, lad_boundaries): 
+    lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
+    lad_name = lad_row.LAD21NM.values[0]
+    lad_geom = lad_row.geometry.values[0]
+    lad_bbox = lad_row.bbox.values[0]
+
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    west, south, east, north = lad_bbox
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select lsoa_id, avg(price) from prices_coordinates_oa_data where latitude between {south} and {north} and longitude between {west} and {east} and date_of_transfer >= 2020-01-01")
+    avg_lsoas_col = cur.fetchall()
+    return avg_lsoas_col 
+
 def find_transport_lsoa(connection, lsoa_id): 
     cur = connection.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"select * from transport_node_data where lsoa_id = '{lsoa_id}'")
