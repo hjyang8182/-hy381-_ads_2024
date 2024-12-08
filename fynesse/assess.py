@@ -275,12 +275,13 @@ def find_transport_bbox(transport_gdf, lad_gdf, transport_type):
         type_codes = ('RPLY', 'RLY')
     elif transport_type == 'AIR':
         type_codes = ('AIR', 'GAT')
+    else: 
+       pass
     # Transport node data seems to be missing a lot of values
     # cur = conn.cursor(pymysql.cursors.DictCursor)
     # cur.execute(f"select * from transport_node_data where longitude between {south} and {north} and latitude between {east} and {west} and stop_type in {type_codes}")
     transport_gdf = gpd.sjoin(transport_gdf, lad_gdf, predicate = 'within', how = 'left')
     transport_gdf = transport_gdf[np.isin(transport_gdf['StopType'], type_codes)]
-
     return transport_gdf
 
 def find_transaction_bbox(conn, bbox): 
@@ -289,6 +290,20 @@ def find_transaction_bbox(conn, bbox):
     cur.execute(f"select * from prices_coordinates_oa_data where longitude between {south} and {north} and latitude between {east} and {west} and date_of_transfer >= 2020-01-01")
     transaction_df = pd.DataFrame(cur.fetchall())
     return transaction_df
+
+def find_residential_buildings(conn, lad_id, building_dfs): 
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select unique lsoa_id from oa_translation_data where lad_id = '{lad_id}'")
+    lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
+    buildings = []
+    for i in range(len(building_dfs)): 
+        building_df = building_dfs[i]
+        buildings.append(building_df[np.isin(building_df['lsoa_id'].values, lsoa_ids)])
+    buildings_df = pd.concat(buildings)
+    buildings_gdf = gpd.GeoDataFrame(buildings_df, geometry = 'geometry')
+    buildings_gdf = buildings_gdf.drop_duplicates('index_right')
+    buildings_gdf = buildings_gdf.drop(columns = 'index_right')
+    return buildings_gdf
 
 def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, transport_type):
     """
@@ -305,8 +320,7 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, t
     lad_bbox = lad_row.bbox.values[0]
     lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
 
-    transport_gdf = gpd.sjoin(transport_gdf, lad_gdf, predicate = 'within')
-    transport_gdf = transport_gdf[np.isin(transport_gdf['StopType']]
+    transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, transport_type)
     house_transactions = find_transaction_bbox(conn, lad_bbox)
     osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
 
@@ -321,19 +335,7 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, t
     plt.title(f"log Price of Houses in {lad_name}")
     plt.show()
 
-def find_residential_buildings(conn, lad_id, building_dfs): 
-    cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select unique lsoa_id from oa_translation_data where lad_id = '{lad_id}'")
-    lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
-    buildings = []
-    for i in range(len(building_dfs)): 
-        building_df = building_dfs[i]
-        buildings.append(building_df[np.isin(building_df['lsoa_id'].values, lsoa_ids)])
-    buildings_df = pd.concat(buildings)
-    buildings_gdf = gpd.GeoDataFrame(buildings_df, geometry = 'geometry')
-    buildings_gdf = buildings_gdf.drop_duplicates('index_right')
-    buildings_gdf = buildings_gdf.drop(columns = 'index_right')
-    return buildings_gdf
+d
 
 
 def find_transport_lsoa(connection, lsoa_id): 
