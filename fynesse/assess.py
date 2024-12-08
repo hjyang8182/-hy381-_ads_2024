@@ -288,7 +288,7 @@ def find_transport_bbox(transport_gdf, lad_gdf, transport_type):
 def find_transaction_bbox(conn, bbox): 
     west, south, east, north = bbox
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select * from prices_coordinates_oa_data where latitude between {south} and {north} and longitude between {east} and {west} and date_of_transfer >= 2020-01-01")
+    cur.execute(f"select * from prices_coordinates_oa_data where latitude between {south} and {north} and longitude between {west} and {east} and date_of_transfer >= 2020-01-01")
     transaction_df = pd.DataFrame(cur.fetchall())
     return transaction_df
 
