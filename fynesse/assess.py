@@ -292,7 +292,6 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries):
     osm_prices_merged = gpd.sjoin(osm_prices_merged, lad_gdf, predicate = 'within')
     fig, ax = plt.subplots()
     lad_gdf.plot(ax = ax, facecolor = 'white', edgecolor = 'dimgray')
-    print(osm_prices_merged['geometry'])
     osm_prices_merged.plot(column = 'price_log', ax = ax, legend = True, cmap = 'viridis')
     transport_gdf.plot(ax = ax, color = 'red', markersize = 10)
 
