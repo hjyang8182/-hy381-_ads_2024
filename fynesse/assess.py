@@ -254,7 +254,7 @@ def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFram
 
     transactions_not_merged = transaction_df[~transaction_df.index.isin(merged_on_addr.index)]
     transactions_not_merged = gpd.GeoDataFrame(transactions_not_merged, geometry = gpd.points_from_xy(transactions_not_merged['longitude'], transactions_not_merged['latitude']))
-    merged_on_coord = gpd.sjoin(transactions_not_merged, osm_df, predicate = 'within')
+    merged_on_coord = gpd.sjoin_nearest(transactions_not_merged, osm_df, max_distance = 1)
     full_merged = pd.concat([merged_on_addr, merged_on_coord])
     full_merged = gpd.GeoDataFrame(full_merged, geometry = 'geometry')
     full_merged['price_log'] = np.log(full_merged['price'])
@@ -264,7 +264,7 @@ def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFram
 def find_transport_bbox(conn, bbox): 
     south, east, north, west = bbox 
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select * from transport_node_data where longitude between {south} and {north} and latitude between {east} and {west}")
+    cur.execute(f"select * from transport_node_data where longitude between {south} and {north} and latitude between {east} and {west} and stop_type = 'MET'")
     transport_df = pd.DataFrame(cur.fetchall())
     return transport_df
 
@@ -286,19 +286,18 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries):
     transport_pois = find_transport_bbox(conn, lad_bbox)
     transport_gdf = gpd.GeoDataFrame(transport_pois, geometry = gpd.points_from_xy(transport_pois['longitude'], transport_pois['latitude']))
     transport_gdf = gpd.sjoin(transport_gdf, lad_gdf, predicate = 'within')
-    transport_gdf = transport_gdf.drop(columns = ['right_index'])
     house_transactions = find_transaction_bbox(conn, lad_bbox)
     osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
 
     osm_prices_merged = gpd.sjoin(osm_prices_merged, lad_gdf, predicate = 'within')
     fig, ax = plt.subplots()
     lad_gdf.plot(ax = ax, facecolor = 'white', edgecolor = 'dimgray')
-    print(osm_prices_merged)
+    print(osm_prices_merged['geometry'])
     osm_prices_merged.plot(column = 'price_log', ax = ax, legend = True, cmap = 'viridis')
-    transport_gdf.plot(ax = ax, color = 'red')
+    transport_gdf.plot(ax = ax, color = 'red', markersize = 10)
 
-    custom_patch = mpatches.Patch(color='red', label='Transport Facilities')
-    ax.legend(handles=[custom_patch], title="Legend")
+    # custom_patch = mpatches.Patch(color='red', label='Transport Facilities')
+    # ax.legend(handles=[custom_patch], title="Legend")
     plt.title(f"log Price of Houses in {lad_name}")
     plt.show()
 
