@@ -263,7 +263,7 @@ def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFram
 def find_transport_bbox(conn, bbox): 
     south, east, north, west = bbox 
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select * from transport_node_data where longitude between {south} and {north} and latitude between {east} and {west} and date_of_transfer >= 2020-01-01")
+    cur.execute(f"select * from transport_node_data where longitude between {south} and {north} and latitude between {east} and {west}")
     transport_df = pd.DataFrame(cur.fetchall())
     return transport_df
 
