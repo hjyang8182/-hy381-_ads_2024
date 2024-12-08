@@ -280,8 +280,9 @@ def find_transport_bbox(transport_gdf, lad_gdf, transport_type):
     # Transport node data seems to be missing a lot of values
     # cur = conn.cursor(pymysql.cursors.DictCursor)
     # cur.execute(f"select * from transport_node_data where longitude between {south} and {north} and latitude between {east} and {west} and stop_type in {type_codes}")
-    transport_gdf = gpd.sjoin(transport_gdf, lad_gdf, predicate = 'within', how = 'left')
+    transport_gdf = gpd.sjoin(transport_gdf, lad_gdf, predicate = 'within')
     transport_gdf = transport_gdf[np.isin(transport_gdf['StopType'], type_codes)]
+    transport_gdf = gpd.GeoDataFrame(transport_gdf)
     return transport_gdf
 
 def find_transaction_bbox(conn, bbox): 
@@ -321,7 +322,6 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, t
     lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
 
     transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, transport_type)
-    transport_gdf = transport_gdf.drop(columns = ['index_right'])
     house_transactions = find_transaction_bbox(conn, lad_bbox)
     osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
 
@@ -331,8 +331,8 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, t
     osm_prices_merged.plot(column = 'price_log', ax = ax, legend = True, cmap = 'viridis')
     transport_gdf.plot(ax = ax, color = 'red', markersize = 10)
 
-    custom_patch = mpatches.Patch(color='red', label='Transport Facilities')
-    ax.legend(handles=[custom_patch], title="Legend")
+    # custom_patch = mpatches.Patch(color='red', label='Transport Facilities')
+    # ax.legend(handles=[custom_patch], title="Legend")
     plt.title(f"log Price of Houses in {lad_name}")
     plt.show()
 
