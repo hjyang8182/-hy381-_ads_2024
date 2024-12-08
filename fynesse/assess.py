@@ -12,6 +12,7 @@ import seaborn as sns
 from geopy.distance import geodesic
 import ast
 import matplotlib.dates as mdates
+import matplotlib.patches as mpatches
 import random
 import numpy as np
 """These are the types of import we might expect in this file
@@ -254,24 +255,63 @@ def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFram
     transactions_not_merged = transaction_df[~transaction_df.index.isin(merged_on_addr.index)]
     transactions_not_merged = gpd.GeoDataFrame(transactions_not_merged, geometry = gpd.points_from_xy(transactions_not_merged['longitude'], transactions_not_merged['latitude']))
     merged_on_coord = gpd.sjoin(transactions_not_merged, osm_df, predicate = 'within')
-    merged_on_coord.drop(columns = ['right_index'])
     full_merged = pd.concat([merged_on_addr, merged_on_coord])
+    full_merged = gpd.GeoDataFrame(full_merged, geometry = 'geometry')
+    full_merged['price_log'] = np.log(full_merged['price'])
     return full_merged
 
-def find_houses_lsoa(connection, lsoa_id, distance_km):
-    cur = connection.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select oa_id, lsoa_id, latitude, longitude, ST_AsText(geometry) as geom from oa_boundary_data where lsoa_id = '{lsoa_id}'")
-    houses_df = []
-    oa_df = cur.fetchall()
-    for df in oa_df: 
-        latitude, longitude = float(df['latitude']), float(df['longitude'])
-        house_oa = join_prices_coordinates_oa_osm_data(connection, latitude, longitude, distance_km)
-        houses_df.append(house_oa)
-    if len(houses_df) == 0: 
-        return 
-    oa_houses_df = pd.concat(houses_df)
-    oa_houses_df = oa_houses_df.drop_duplicates()
-    return oa_houses_df
+def find_transport_bbox(conn, bbox): 
+    south, east, north, west = bbox 
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select * from transport_node_data where longitude between {south} and {north} and latitude between {east} and {west} and date_of_transfer >= 2020-01-01")
+    transport_df = pd.DataFrame(cur.fetchall())
+    return transport_df
+
+def find_transaction_bbox(conn, bbox): 
+    south, east, north, west = bbox 
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select * from prices_coordinates_oa_data where longitude between {south} and {north} and latitude between {east} and {west} and date_of_transfer >= 2020-01-01")
+    transaction_df = pd.DataFrame(cur.fetchall())
+    return transaction_df
+
+def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries): 
+    buildings_gdf = find_residential_buildings(lad_id, building_dfs)
+    lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
+    lad_name = lad_row.name.values[0]
+    lad_geom = lad_row.geometry.values[0]
+    lad_bbox = lad_row.bbox.values[0]
+    south, east, north, west = lad_bbox
+    transport_pois = find_transport_bbox(conn, lad_bbox)
+    transport_gdf = gpd.GeoDataFrame(transport_pois, geometry = gpd.points_from_xy(transport_pois['longitude'], transport_pois['latitude']))
+    house_transactions = find_transaction_bbox(conn, lad_bbox)
+    osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
+    lad_gdf = gpd.GeoDataFrame({'geometry': lad_geom})
+    osm_prices_merged = gpd.sjoin(osm_prices_merged, lad_gdf, predicate = 'within')
+    fig, ax = plt.subplots()
+    lad_gdf.plot(ax = ax, facecolor = 'white', edgecolor = 'dimgray')
+    osm_prices_merged.plot(column = 'price_log', ax = ax, legend = True, cmap = 'viridis')
+    transport_gdf.plot(ax = ax, color = 'red')
+
+    custom_patch = mpatches.Patch(color='red', label='Transport Facilities')
+    ax.legend(handles=[custom_patch], title="Legend")
+    plt.title(f"log Price of Houses in {lad_name}")
+    plt.show()
+
+def find_residential_buildings(conn, lad_id, building_dfs): 
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select unique lsoa_id from oa_translation_data where lad_id = '{lad_id}'")
+    lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
+    buildings = []
+    for i in range(len(building_dfs)): 
+        building_df = building_dfs[i]
+        buildings.append(building_df[np.isin(building_df['lsoa_id'].values, lsoa_ids)])
+    buildings_df = pd.concat(buildings)
+    buildings_gdf = gpd.GeoDataFrame(buildings_df, geometry = 'geometry')
+    buildings_gdf = buildings_gdf.drop_duplicates('index_right')
+    buildings_gdf = buildings_gdf.drop(columns = 'index_right')
+    return buildings_gdf
+
+
 
 def find_transport_lsoa(connection, lsoa_id): 
     cur = connection.cursor(pymysql.cursors.DictCursor)
