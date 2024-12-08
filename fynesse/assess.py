@@ -263,7 +263,6 @@ def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFram
     
     full_merged = gpd.GeoDataFrame(full_merged, geometry = 'geometry')
     full_merged['price_log'] = np.log(full_merged['price'])
-    full_merged = full_merged.drop(columns= 'index_right')
     return full_merged
 
 def find_transport_bbox(conn, bbox): 
