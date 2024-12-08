@@ -357,10 +357,10 @@ def plot_lad_prices_random_subset(conn, lad_ids, building_dfs, lad_boundaries, t
             lad_gdf.plot(ax = ax[i,j], facecolor = 'white', edgecolor = 'dimgray')
             osm_prices_merged.plot(column = 'price_log', ax = ax[i,j], legend = True, cmap = 'viridis')
             transport_gdf.plot(ax = ax[i,j], color = 'red', markersize = 10)
+            ax[i, j].set_title(f"log Price of Houses in {lad_name}", fontsize=8, fontweight='light')
 
             # custom_patch = mpatches.Patch(color='red', label='Transport Facilities')
             # ax.legend(handles=[custom_patch], title="Legend")
-            plt.title(f"log Price of Houses in {lad_name}")
             plt.show()
 
 def find_avg_lsoa_price_in_lad(conn, lad_id, lad_boundaries): 
