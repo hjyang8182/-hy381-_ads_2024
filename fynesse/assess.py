@@ -288,7 +288,14 @@ def find_transaction_bbox(conn, bbox):
     transaction_df = pd.DataFrame(cur.fetchall())
     return transaction_df
 
-def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries): 
+def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_type):
+    """
+        transport type: 
+            'BUS' :  bus stops, station entrances
+            'SUB' : tube, tram, underground platform entrances
+            'RAIL' : railway stations 
+            'AIR' : airport, air access areas
+    """ 
     buildings_gdf = find_residential_buildings(conn, lad_id, building_dfs)
     lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
     lad_name = lad_row.LAD21NM.values[0]
@@ -296,7 +303,7 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries):
     lad_bbox = lad_row.bbox.values[0]
     lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
 
-    transport_pois = find_transport_bbox(conn, lad_bbox)
+    transport_pois = find_transport_bbox(conn, lad_bbox, transport_type)
     transport_gdf = gpd.GeoDataFrame(transport_pois, geometry = gpd.points_from_xy(transport_pois['longitude'], transport_pois['latitude']))
     transport_gdf = gpd.sjoin(transport_gdf, lad_gdf, predicate = 'within')
     house_transactions = find_transaction_bbox(conn, lad_bbox)
