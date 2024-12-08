@@ -321,6 +321,7 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, t
     lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
 
     transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, transport_type)
+    transport_gdf = transport_gdf.drop(columns = ['index_right'])
     house_transactions = find_transaction_bbox(conn, lad_bbox)
     osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
 
