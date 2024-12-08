@@ -281,12 +281,14 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries):
     lad_name = lad_row.LAD21NM.values[0]
     lad_geom = lad_row.geometry.values[0]
     lad_bbox = lad_row.bbox.values[0]
-    south, east, north, west = lad_bbox
+    lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
+
     transport_pois = find_transport_bbox(conn, lad_bbox)
     transport_gdf = gpd.GeoDataFrame(transport_pois, geometry = gpd.points_from_xy(transport_pois['longitude'], transport_pois['latitude']))
+    transport_gdf = gpd.sjoin(transport_gdf, lad_gdf, predicate = 'within')
+    transport_gdf = transport_gdf.drop(columns = ['right_index'])
     house_transactions = find_transaction_bbox(conn, lad_bbox)
     osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
-    lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
 
     osm_prices_merged = gpd.sjoin(osm_prices_merged, lad_gdf, predicate = 'within')
     fig, ax = plt.subplots()
