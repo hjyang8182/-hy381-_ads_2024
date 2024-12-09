@@ -240,6 +240,18 @@ def find_student_poi_count(poi_df, oa_poi_df, tag):
 
 # TASK 2: TRANSPORT FACILITY EFFECT ON HOUSE PRICES
 def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFrame): 
+    """
+        Given the transaction data on houses and a gdf consisting of OSMs labelled with tag 
+        building = residential, join the two together based on address and whether or not the longitude, latitude coordinate
+        of the transaction data falls within the POI
+        
+        params: 
+        - osm_df: gdf consisting of the OSM POI data
+        - transaction_df: df consisting of the transaction data from prices_coordinates_oa_data
+
+        returns: 
+        - full_merged: gdf consisting of joined OSM POI and transaction data, with log_10 house price values
+    """
     transaction_df['street'] = transaction_df['street'].str.lower()
     transaction_df['primary_addressable_object_name'] = transaction_df['primary_addressable_object_name'].str.lower()
 
@@ -267,6 +279,20 @@ def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFram
     return full_merged
 
 def find_transport_bbox(transport_gdf, lad_gdf, transport_type): 
+    """
+        Given a bounding box, find transport facilities within the box
+
+        params: 
+        - transport_gdf: gdf consisting of the OSM transport data
+        - lad_gdf: gdf consisting of LAD boundaries data
+        - transport_type: classification of transport stops 
+            - 'BUS': any transport stops related to buses
+            - 'SUB': any transport stops related to underground tube station 
+            - 'RAIL': any transport stops related to overground tube stations
+            - 'AIR': any transport stops related to airports, aeroways
+        returns: 
+        - transport_gdf: gdf consisting of queried transport OSM data 
+    """
     type_codes = []
     if transport_type == 'BUS': 
         type_codes = ('BCT', 'BCS', 'BCQ', 'BST', 'BCE', 'BCP')
@@ -287,7 +313,20 @@ def find_transport_bbox(transport_gdf, lad_gdf, transport_type):
     transport_gdf = gpd.GeoDataFrame(transport_gdf)
     return transport_gdf
 
+def find_transport_lad_id(transport_gdf, lad_gdf, transport_type, lad_id, lad_boundaries): 
+    lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
+    lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
+    return find_transport_bbox(transport_gdf, lad_gdf, transport_type)
+
 def find_transaction_bbox(conn, bbox): 
+    """
+        Given a bounding box, find house purchase transactions within the box
+
+        params: 
+        - bbox: (west, south, east, north) coordinates of the bounding box
+        returns: 
+        - transaction_df: df consisting of queried transaction data from prices_coordinates_oa_data
+    """
     west, south, east, north = bbox
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"select * from prices_coordinates_oa_data where latitude between {south} and {north} and longitude between {west} and {east} and date_of_transfer >= 2020-01-01")
@@ -295,6 +334,16 @@ def find_transaction_bbox(conn, bbox):
     return transaction_df
 
 def find_residential_buildings(conn, lad_id, building_dfs): 
+    """
+        Given a LAD id and all building=residential OSM data, find POIs within the LAD
+
+        params: 
+        - lad_id: unique iD of the LAD
+        - building_dfs: gdf consisting of all building=residential OSM pois
+
+        returns: 
+        - buildings_gdf: gdf consisting of queried building=residential POIs from within the LAD
+    """
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"select unique lsoa_id from oa_translation_data where lad_id = '{lad_id}'")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
@@ -399,6 +448,22 @@ def plot_avg_lsoa_prices_in_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, t
     lsoa_avg_merged_gdf.plot(ax = ax, column = 'avg(price)', cmap = 'viridis', legend=True)
     transport_gdf.plot(ax = ax, color = 'red')
     
+def find_dist_house_corr_lsoa(connection, lsoa_id, transport_lsoa, house_lsoa):
+    avg_distances = np.array([])
+    prices = np.array([])
+    cur = connection.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select lsoa_name from oa_boundary data where lsoa_id = {lsoa_id}")
+    lsoa_name = cur.fetchall()[0]['lsoa_name']
+    houses_lsoa = find_transaction_lsoa(lsoa_name)
+    houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
+    houses_lsoa['avg_distance'] = houses_lsoa.geometry.apply(lambda house: find_avg_distance(house, transport_lsoa))
+    avg_distances = np.append(avg_distances, houses_lsoa['avg_distance'].values)
+    prices = np.append(prices, houses_lsoa['price'].values)
+    plt.figure()
+    plt.scatter(avg_distances, prices)
+    return avg_distances, prices
+
+
 def find_transport_lsoa(connection, lsoa_id): 
     cur = connection.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"select * from transport_node_data where lsoa_id = '{lsoa_id}'")
