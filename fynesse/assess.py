@@ -632,7 +632,7 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs,
     clusters = get_lsoa_house_clusters(houses_lsoa)
     houses_lsoa['clusters'] = clusters
 
-    transport_lsoa = find_transport_bbox(connection, lsoa_bbox)
+    transport_lsoa = find_transport_lsoa(connection, lsoa_id)
     transport_nodes_coords = list(map(lambda n: (n['longitude'], n['latitude']), transport_lsoa))
 
     fig, ax = plt.subplots(1, 2, figsize = (12,12))
