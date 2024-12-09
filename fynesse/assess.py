@@ -445,7 +445,7 @@ def find_avg_lsoa_price_in_lad(conn, lad_id, lad_boundaries):
     cur = conn.cursor(pymysql.cursors.DictCursor)
     west, south, east, north = lad_bbox
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select lsoa_id, avg(price) from prices_coordinates_oa_data where latitude between {south} and {north} and longitude between {west} and {east} and date_of_transfer >= '2020-01-01' group by lsoa_id")
+    cur.execute(f"select lsoa_id, avg(price) as avg_price from prices_coordinates_oa_data where latitude between {south} and {north} and longitude between {west} and {east} and date_of_transfer >= '2020-01-01' group by lsoa_id")
     avg_lsoas_col = cur.fetchall()
     return avg_lsoas_col 
 
@@ -551,8 +551,8 @@ def plot_distance_to_transport_price_lad(conn, lad_id, lad_boundaries, lsoa_boun
             dist_dict = {'lsoa_id' : lsoa_id, f'distance_to_{transport_atco}': transport_geom.distance(lsoa_centroid)}
             distances.append(dist_dict)
     distances_df = pd.DataFrame(distances)  
-    distances_df['price_log'] = np.log(distances_df['avg(price)'])
     distances_prices_df = distances_df.merge(avg_col_house_prices_df, left_on = 'lsoa_id', right_on = 'lsoa_id')
+    distances_prices_df['price_log'] = np.log(distances_prices_df['avg_price'])
     for i, row in transport_nodes.iterrows():
         transport_atco = row['ATCOCode']
         distances = distances_prices_df[f'distance_to_{transport_atco}'].values
