@@ -503,6 +503,8 @@ def plot_house_price_changes(connection, lsoa_id):
     cur = connection.cursor(pymysql.cursors.DictCursor)
     houses_df = find_transaction_lsoa(connection, lsoa_id)
     transport_df = find_transport_lsoa(connection, lsoa_id)
+    if houses_df.empty:
+        return
     creation_dates = np.unique(transport_df.creation_date.values)
     house_groups = houses_df.groupby(['street','primary_addressable_object_name', 'secondary_addressable_object_name'])[['price', 'date_of_transfer', 'oa_id']]
     same_houses = {}
