@@ -404,12 +404,14 @@ def plot_lad_prices_random_subset(conn, lad_ids, building_dfs, lad_boundaries, t
             house_transactions = find_transaction_bbox(conn, lad_bbox)
             osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
 
-            osm_prices_merged = gpd.sjoin(osm_prices_merged, lad_gdf, predicate = 'within')
-            lad_gdf.plot(ax = ax[i,j], facecolor = 'white', edgecolor = 'dimgray')
-            osm_prices_merged.plot(column = 'price_log', ax = ax[i,j], legend = True, cmap = 'viridis')
-            transport_gdf.plot(ax = ax[i,j], color = 'red', markersize = 10)
-            ax[i, j].set_title(f"log Price of Houses in {lad_name}", fontsize=8, fontweight='light')
-
+            try: 
+                osm_prices_merged = gpd.sjoin(osm_prices_merged, lad_gdf, predicate = 'within')
+                lad_gdf.plot(ax = ax[i,j], facecolor = 'white', edgecolor = 'dimgray')
+                osm_prices_merged.plot(column = 'price_log', ax = ax[i,j], legend = True, cmap = 'viridis')
+                transport_gdf.plot(ax = ax[i,j], color = 'red', markersize = 10)
+                ax[i, j].set_title(f"log Price of Houses in {lad_name}", fontsize=8, fontweight='light')
+            except: 
+                pass
             # custom_patch = mpatches.Patch(color='red', label='Transport Facilities')
             # ax.legend(handles=[custom_patch], title="Legend")
             plt.tight_layout()
@@ -558,6 +560,7 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, y_threshold=2
     lsoa_bbox = lsoa_row.bbox.values[0]
 
     houses_lsoa = find_transaction_bbox(connection, lsoa_bbox)
+    houses_lsoa['log_price'] = np.log(houses_lsoa['price'].values)
     houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
 
     clusters = get_lsoa_house_clusters(houses_lsoa)
@@ -568,7 +571,7 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, y_threshold=2
 
     fig, ax = plt.subplots(1, 2, figsize = (12,12))
     houses_lsoa.plot(column = 'clusters', ax = ax[0], legend = True, cmap = 'tab20')
-    houses_lsoa.plot(column = 'price', ax = ax[1], legend = True, cmap = 'YlOrRd')
+    houses_lsoa.plot(column = 'price_log', ax = ax[1], legend = True, cmap = 'YlOrRd')
     for coord in transport_nodes_coords:
         ax[0].scatter(coord[0], coord[1], color = 'red')
     ax[0].set_title(f"Clusters for houses in {lsoa_name}")
