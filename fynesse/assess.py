@@ -386,14 +386,15 @@ def plot_avg_lsoa_prices_in_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, t
     lsoa_boundaries = lsoa_boundaries[np.isin(lsoa_boundaries['LSOA21CD'], lad_lsoa_ids)]
     lsoa_avg_merged = avg_lsoa_prices_df.merge(lsoa_boundaries[['LSOA21CD', 'geometry']], left_on = 'lsoa_id', right_on = 'LSOA21CD')
     lad_row = lad_boundaries[lad_boundaries['LAD21NM'] == 'Westminster']
-    lad_bbox = lad_row['bbox'].values[0]
     lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
+    lsoa_avg_merged = gpd.sjoin(lsoa_avg_merged, lad_gdf, predicate = 'within')
     transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, 'SUB')
     fig, ax = plt.subplots()
     lad_gdf.plot(ax = ax, facecolor = 'white', edgecolor = 'dimgray')
+    lsoa_avg_merged['avg(price)'] = np.log(lsoa_avg_merged['avg(price)'].astype(float))
     lsoa_avg_merged_gdf = gpd.GeoDataFrame(lsoa_avg_merged, geometry = 'geometry')
-    lsoa_avg_merged_gdf.plot(ax = ax, column = 'avg(price)', cmap = 'viridis', alpha = 0.3)
-    transport_gdf.plot(ax = ax, color = 'red', alpha = 0.3)
+    lsoa_avg_merged_gdf.plot(ax = ax, column = 'avg(price)', cmap = 'viridis', legend=True)
+    transport_gdf.plot(ax = ax, color = 'red')
     
 def find_transport_lsoa(connection, lsoa_id): 
     cur = connection.cursor(pymysql.cursors.DictCursor)
