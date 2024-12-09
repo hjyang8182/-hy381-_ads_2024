@@ -385,7 +385,7 @@ def plot_avg_lsoa_prices_in_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, t
     lad_lsoa_ids = list(avg_lsoa_prices_df['lsoa_id'].values)
     lsoa_boundaries = lsoa_boundaries[np.isin(lsoa_boundaries['LSOA21CD'], lad_lsoa_ids)]
     lsoa_avg_merged = avg_lsoa_prices_df.merge(lsoa_boundaries[['LSOA21CD', 'geometry']], left_on = 'lsoa_id', right_on = 'LSOA21CD')
-    lad_row = lad_boundaries[lad_boundaries['LAD21NM'] == 'Westminster']
+    lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
     lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
     lsoa_avg_merged = gpd.sjoin(lsoa_avg_merged, lad_gdf, predicate = 'within')
     transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, 'SUB')
