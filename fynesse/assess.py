@@ -618,13 +618,13 @@ def get_lsoa_house_clusters(houses_lsoa):
     clusters = sch.fcluster(linkage_matrix, t=y_threshold, criterion='distance')
     return clusters
 
-def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, y_threshold=20): 
+def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs y_threshold=20): 
     lsoa_row = lsoa_boundaries[lsoa_boundaries['LSOA21CD'] == lsoa_id]
     lsoa_name = lsoa_row.LSOA21NM.values[0]
     lsoa_geom = lsoa_row.geometry.values[0]
     lsoa_bbox = lsoa_row.bbox.values[0]
 
-    houses_lsoa = find_joined_osm_transaction_data_lsoa(lsoa_bbox)
+    houses_lsoa = find_joined_osm_transaction_data_lsoa(lsoa_bbox, building_dfs)
     houses_lsoa['area_m2'] = houses_lsoa.geometry.area
     houses_lsoa['log_price'] = np.log(houses_lsoa['price'].values)
     houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
