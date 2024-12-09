@@ -551,7 +551,7 @@ def plot_distance_to_transport_price_lad(conn, lad_id, lad_boundaries, lsoa_boun
             dist_dict = {'lsoa_id' : lsoa_id, f'distance_to_{transport_atco}': transport_geom.distance(lsoa_centroid)}
             distances.append(dist_dict)
     distances_df = pd.DataFrame(distances)  
-    distances_prices_df = distances_df.merge(avg_col_house_prices_df, left_on = 'lsoa_id', right_on = 'lsoa_id')\
+    distances_prices_df = distances_df.merge(avg_col_house_prices_df, left_on = 'lsoa_id', right_on = 'lsoa_id')
     distances_prices_df['avg_price'] = distances_prices_df['avg_price'].astype(float)
     distances_prices_df['price_log'] = np.log(distances_prices_df['avg_price'])
     for i, row in transport_nodes.iterrows():
