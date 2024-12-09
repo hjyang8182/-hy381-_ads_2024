@@ -454,7 +454,7 @@ def plot_avg_lsoa_prices_in_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, t
         warnings.filterwarnings('ignore')
         avg_lsoa_prices = find_avg_lsoa_price_in_lad(conn, lad_id, lad_boundaries)
         avg_lsoa_prices_df = pd.DataFrame(avg_lsoa_prices)
-        cur = conn.cursor()
+        cur = conn.cursor(pymysql.cursors.DictCursor)
         cur.execute(f"select lsoa_id from oa_translation_data where lad_id = '{lad_id}'")
         lad_lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
         lsoa_boundaries = lsoa_boundaries[np.isin(lsoa_boundaries['LSOA21CD'], lad_lsoa_ids)]
