@@ -510,7 +510,7 @@ def plot_house_price_changes(connection, lsoa_id):
         if len(group) > 1: 
             same_houses[address] = group
     keys = list(same_houses.keys())
-    same_houses_sample = random.sample(keys, 9)
+    same_houses_sample = random.sample(keys, 9, replace = False)
     fig, axs = plt.subplots(3, 3, figsize=(12, 12)) 
     for i in range(3):
         for j in range(3):
