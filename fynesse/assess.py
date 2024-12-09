@@ -388,11 +388,11 @@ def plot_avg_lsoa_prices_in_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, t
     lsoa_avg_merged_gdf = gpd.GeoDataFrame(lsoa_avg_merged, geometry = 'geometry')
     lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
     lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
-    lsoa_avg_merged = gpd.sjoin(lsoa_avg_merged, lad_gdf, predicate = 'within')
+    lsoa_avg_merged_gdf = gpd.sjoin(lsoa_avg_merged_gdf, lad_gdf, predicate = 'within')
     transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, 'SUB')
     fig, ax = plt.subplots()
     lad_gdf.plot(ax = ax, facecolor = 'white', edgecolor = 'dimgray')
-    lsoa_avg_merged['avg(price)'] = np.log(lsoa_avg_merged['avg(price)'].astype(float))
+    lsoa_avg_merged_gdf['avg(price)'] = np.log(lsoa_avg_merged_gdf['avg(price)'].astype(float))
     lsoa_avg_merged_gdf.plot(ax = ax, column = 'avg(price)', cmap = 'viridis', legend=True)
     transport_gdf.plot(ax = ax, color = 'red')
     
