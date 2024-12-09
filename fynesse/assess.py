@@ -562,7 +562,7 @@ def get_lsoa_house_clusters(houses_lsoa):
 
 def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, y_threshold=20): 
     lsoa_row = lsoa_boundaries[lsoa_boundaries['LSOA21CD'] == lsoa_id]
-    lsoa_name = lsoa_row.LAD21NM.values[0]
+    lsoa_name = lsoa_row.LSOA21NM.values[0]
     lsoa_geom = lsoa_row.geometry.values[0]
     lsoa_bbox = lsoa_row.bbox.values[0]
 
