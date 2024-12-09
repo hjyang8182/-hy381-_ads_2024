@@ -161,27 +161,8 @@ def find_houses_bbox(bbox_coords):
    return bbox_houses
 
 def get_bbox_for_region(region_geometry): 
-    '''
-    Calculates the coordinates of the centroid for the region as well as a bounding box that encompasses the region 
-    Args: 
-        region_geometry (Polygon): Polygon object that represents the geometry of a certain region 
-    Returns: 
-        latitude (float): Latitude of centroid
-        longitude (float): Longitude of centroid
-        box_width (float): Width of bounding box for the region 
-        box_height (float): Height of bounding box for the region
-    '''
-    centroid = region_geometry.centroid
     min_x, min_y, max_x, max_y = region_geometry.bounds
-    box_width = max_x - min_x
-    box_height = max_y - min_y
-    longitude = centroid.x
-    latitude = centroid.y
-    north = latitude + box_height/2
-    south = latitude - box_height/2
-    east = longitude + box_width/2
-    west = longitude - box_width/2
-    return (west, south, east, north)
+    return (min_x, min_y, max_x, max_y )
 
 def create_bbox_polygon(row, distance_km): 
     polygon = row['geometry']
