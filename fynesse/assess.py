@@ -522,16 +522,19 @@ def plot_house_price_changes(connection, lsoa_id):
             oa_id = house.oa_id.values[0]
             date_of_transfer = mdates.date2num(house.date_of_transfer.values)
             prices = house.price.values
-            axs[i, j].plot(date_of_transfer, prices)  
+            axs[i, j].scatter(date_of_transfer, prices)  
             axs[i, j].set_title(f"{key}", fontsize=8, fontweight='light')
             for date in creation_dates: 
                 if date >= np.min(house.date_of_transfer) and date <= np.max(house.date_of_transfer):
                     date = mdates.date2num(date)
-                    axs[i, j].axvline(x= date, color='red', linestyle='--', linewidth=1.5)
+                    axs[i, j].axvline(x= date, color='red', linestyle='--', linewidth=1.5, label = 'Creation Date of Transport Facility')
             axs[i, j].xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
             for tick in axs[i, j].get_xticklabels():
                 tick.set_rotation(45)  # Rotate tick labels by 45 degrees
     plt.tight_layout()
+    plt.title(f"House Price Trends Over Time in {lsoa_id}")
+    plt.legend()
+    plt.show()
 
 def plot_distance_to_transport_price_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, transport_df, transport_type):
     distances = []
