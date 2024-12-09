@@ -530,6 +530,36 @@ def plot_house_price_changes(connection, lsoa_id):
                 tick.set_rotation(45)  # Rotate tick labels by 45 degrees
     plt.tight_layout()
 
+def plot_distance_to_transport_price_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, transport_df, transport_type):
+    distances = []
+    lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
+    lad_name = lad_row.LAD21NM.values[0]
+
+    avg_col_house_prices = find_avg_lsoa_price_in_lad(conn, lad_id, lad_boundaries)
+    avg_col_house_prices_df = pd.DataFrame(avg_col_house_prices)
+    transport_nodes = find_transport_lad_id(transport_df, transport_type, lad_id, lad_boundaries)
+    lsoas_in_lad = avg_col_house_prices_df.lsoa_id.values
+    distances = []
+    for lsoa_id in lsoas_in_lad: 
+        dist_dict = {}
+        lsoa_row = lsoa_boundaries[lsoa_boundaries['LSOA21CD'] == lsoa_id]
+        lsoa_geometry = lsoa_row['geometry'].values[0]
+        lsoa_centroid = lsoa_geometry.centroid
+        for i, row in transport_nodes.iterrows():
+            transport_geom = row['geometry']
+            transport_atco = row['ATCOCode']
+            dist_dict = {'lsoa_id' : lsoa_id, f'distance_to_{transport_atco}': transport_geom.distance(lsoa_centroid)}
+            distances.append(dist_dict)
+    distances_df = pd.DataFrame(distances)  
+    distances_prices_df = distances_df.merge(avg_col_house_prices_df, left_on = 'lsoa_id', right_on = 'lsoa_id')
+    for i, row in transport_nodes.iterrows():
+        transport_atco = row['ATCOCode']
+        distances = distances_prices_df[f'distance_to_{transport_atco}'].values
+        prices = np.log(distances_prices_df['avg(price)'].values)
+        plt.scatter(distances, prices)
+        plt.title(f"Average Log Price of Houses of LSOAs in {lad_name} vs. Distance to {transport_type}")
+
+    
 def find_dist_house_corr_lsoa(connection, lsoa_id, transport_lsoa, house_lsoa):
     avg_distances = np.array([])
     prices = np.array([])
