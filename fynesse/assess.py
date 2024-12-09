@@ -535,9 +535,9 @@ def plot_house_price_changes(connection, lsoa_id):
             axs[i, j].xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
             for tick in axs[i, j].get_xticklabels():
                 tick.set_rotation(45)  # Rotate tick labels by 45 degrees
+            axs[i,j].legend()
     plt.tight_layout()
-    plt.title(f"House Price Trends Over Time in {lsoa_id}")
-    plt.legend()
+    fig.suptitle(f"House Price Trends Over Time in {lsoa_id}")
     plt.show()
 
 def plot_distance_to_transport_price_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, transport_df, transport_type):
