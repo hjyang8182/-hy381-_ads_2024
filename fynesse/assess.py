@@ -313,7 +313,7 @@ def find_transport_bbox(transport_gdf, lad_gdf, transport_type):
     transport_gdf = gpd.GeoDataFrame(transport_gdf)
     return transport_gdf
 
-def find_transport_lad_id(transport_gdf, lad_gdf, transport_type, lad_id, lad_boundaries): 
+def find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries): 
     lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
     lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
     return find_transport_bbox(transport_gdf, lad_gdf, transport_type)
