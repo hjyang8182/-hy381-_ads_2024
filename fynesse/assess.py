@@ -522,7 +522,7 @@ def plot_house_price_changes(connection, lsoa_id):
             oa_id = house.oa_id.values[0]
             date_of_transfer = mdates.date2num(house.date_of_transfer.values)
             prices = house.price.values
-            axs[i, j].scatter(date_of_transfer, prices)  
+            axs[i, j].plot(date_of_transfer, prices)  
             axs[i, j].set_title(f"{key}", fontsize=8, fontweight='light')
             for date in creation_dates: 
                 if date >= np.min(house.date_of_transfer) and date <= np.max(house.date_of_transfer):
