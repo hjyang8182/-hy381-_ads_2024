@@ -15,6 +15,7 @@ import matplotlib.dates as mdates
 import matplotlib.patches as mpatches
 import random
 import numpy as np
+import warnings
 """These are the types of import we might expect in this file
 import pandas
 import bokeh
@@ -365,30 +366,34 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, t
             'RAIL' : railway stations 
             'AIR' : airport, air access areas
     """ 
-    buildings_gdf = find_residential_buildings(conn, lad_id, building_dfs)
-    lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
-    lad_name = lad_row.LAD21NM.values[0]
-    lad_geom = lad_row.geometry.values[0]
-    lad_bbox = lad_row.bbox.values[0]
-    lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore')
+        buildings_gdf = find_residential_buildings(conn, lad_id, building_dfs)
+        lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
+        lad_name = lad_row.LAD21NM.values[0]
+        lad_geom = lad_row.geometry.values[0]
+        lad_bbox = lad_row.bbox.values[0]
+        lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
 
-    transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, transport_type)
-    house_transactions = find_transaction_bbox(conn, lad_bbox)
-    osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
+        transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, transport_type)
+        house_transactions = find_transaction_bbox(conn, lad_bbox)
+        osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
 
-    osm_prices_merged = gpd.sjoin(osm_prices_merged, lad_gdf, predicate = 'within')
-    fig, ax = plt.subplots()
-    lad_gdf.plot(ax = ax, facecolor = 'white', edgecolor = 'dimgray')
-    osm_prices_merged = osm_prices_merged.sort_values(by='price', ascending=True)
-    osm_prices_merged.plot(column = 'price_log', ax = ax, legend = True, cmap = 'viridis')
-    transport_gdf.plot(ax = ax, color = 'red', markersize = 10)
+        osm_prices_merged = gpd.sjoin(osm_prices_merged, lad_gdf, predicate = 'within')
+        fig, ax = plt.subplots()
+        lad_gdf.plot(ax = ax, facecolor = 'white', edgecolor = 'dimgray')
+        osm_prices_merged = osm_prices_merged.sort_values(by='price', ascending=True)
+        osm_prices_merged.plot(column = 'price_log', ax = ax, legend = True, cmap = 'viridis')
+        transport_gdf.plot(ax = ax, color = 'red', markersize = 10)
 
-    # custom_patch = mpatches.Patch(color='red', label='Transport Facilities')
-    # ax.legend(handles=[custom_patch], title="Legend")
-    plt.title(f"log Price of Houses in {lad_name}")
-    plt.show()
+        # custom_patch = mpatches.Patch(color='red', label='Transport Facilities')
+        # ax.legend(handles=[custom_patch], title="Legend")
+        plt.title(f"log Price of Houses in {lad_name}")
+        plt.show()
 
 def plot_lad_prices_random_subset(conn, lad_ids, building_dfs, lad_boundaries, transport_gdf, transport_type):
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore')
     fig, ax = plt.subplots(3, 3, figsize=(12,12))
     for i in range(3):
         for j in range(3): 
@@ -431,24 +436,26 @@ def find_avg_lsoa_price_in_lad(conn, lad_id, lad_boundaries):
     return avg_lsoas_col 
 
 def plot_avg_lsoa_prices_in_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, transport_gdf):
-    avg_lsoa_prices = find_avg_lsoa_price_in_lad(conn, lad_id, lad_boundaries)
-    avg_lsoa_prices_df = pd.DataFrame(avg_lsoa_prices)
-    cur = conn.cursor()
-    cur.execute(f"select lsoa_id from oa_translation_data where lad_id = '{lad_id}")
-    lad_lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
-    lsoa_boundaries = lsoa_boundaries[np.isin(lsoa_boundaries['LSOA21CD'], lad_lsoa_ids)]
-    lsoa_avg_merged = avg_lsoa_prices_df.merge(lsoa_boundaries[['LSOA21CD', 'geometry']], left_on = 'lsoa_id', right_on = 'LSOA21CD')
-    lsoa_avg_merged_gdf = gpd.GeoDataFrame(lsoa_avg_merged, geometry = 'geometry')
-    lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
-    lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore')
+        avg_lsoa_prices = find_avg_lsoa_price_in_lad(conn, lad_id, lad_boundaries)
+        avg_lsoa_prices_df = pd.DataFrame(avg_lsoa_prices)
+        cur = conn.cursor()
+        cur.execute(f"select lsoa_id from oa_translation_data where lad_id = '{lad_id}")
+        lad_lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
+        lsoa_boundaries = lsoa_boundaries[np.isin(lsoa_boundaries['LSOA21CD'], lad_lsoa_ids)]
+        lsoa_avg_merged = avg_lsoa_prices_df.merge(lsoa_boundaries[['LSOA21CD', 'geometry']], left_on = 'lsoa_id', right_on = 'LSOA21CD')
+        lsoa_avg_merged_gdf = gpd.GeoDataFrame(lsoa_avg_merged, geometry = 'geometry')
+        lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
+        lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
 
-    lsoa_avg_merged_gdf = gpd.sjoin(lsoa_avg_merged_gdf, lad_gdf, predicate = 'within')
-    transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, 'SUB')
-    fig, ax = plt.subplots()
-    lad_gdf.plot(ax = ax, facecolor = 'white', edgecolor = 'dimgray')
-    lsoa_avg_merged_gdf['avg(price)'] = np.log(lsoa_avg_merged_gdf['avg(price)'].astype(float))
-    lsoa_avg_merged_gdf.plot(ax = ax, column = 'avg(price)', cmap = 'viridis', legend=True)
-    transport_gdf.plot(ax = ax, color = 'red')
+        lsoa_avg_merged_gdf = gpd.sjoin(lsoa_avg_merged_gdf, lad_gdf, predicate = 'within')
+        transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, 'SUB')
+        fig, ax = plt.subplots()
+        lad_gdf.plot(ax = ax, facecolor = 'white', edgecolor = 'dimgray')
+        lsoa_avg_merged_gdf['avg(price)'] = np.log(lsoa_avg_merged_gdf['avg(price)'].astype(float))
+        lsoa_avg_merged_gdf.plot(ax = ax, column = 'avg(price)', cmap = 'viridis', legend=True)
+        transport_gdf.plot(ax = ax, color = 'red')
     
 def find_dist_house_corr_lsoa(connection, lsoa_id, transport_lsoa, house_lsoa):
     avg_distances = np.array([])
