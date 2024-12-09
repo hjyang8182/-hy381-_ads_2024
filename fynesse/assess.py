@@ -267,6 +267,7 @@ def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFram
 
     transactions_not_merged = transaction_df[~transaction_df.index.isin(merged_on_addr.index)]
     transactions_not_merged = gpd.GeoDataFrame(transactions_not_merged, geometry = gpd.points_from_xy(transactions_not_merged['longitude'], transactions_not_merged['latitude']))
+    transactions_not_merged = transactions_not_merged.set_crs('epsg:4326')
     merged_on_coord = gpd.sjoin_nearest(transactions_not_merged, osm_df, max_distance = 0.005)
     merged_on_coord = merged_on_coord.drop(columns = 'index_right')
 
@@ -358,6 +359,19 @@ def find_residential_buildings(conn, lad_id, building_dfs):
     buildings_gdf = buildings_gdf.drop(columns = 'index_right')
     return buildings_gdf
 
+def find_joined_osm_transaction_data_lsoa(lsoa_id, building_dfs): 
+    buildings = []
+    for i in range(len(building_dfs)): 
+        building_df = building_dfs[i]
+        buildings.append(building_df[building_df['lsoa_id'] == lsoa_id])
+    buildings_df = pd.concat(buildings)
+    buildings_gdf = gpd.GeoDataFrame(buildings_df, geometry = 'geometry')
+    buildings_gdf = buildings_gdf.drop_duplicates('index_right')
+    buildings_gdf = buildings_gdf.drop(columns = 'index_right')
+    transactions_lsoa = find_transaction_lsoa(lsoa_id)
+    joined_data = join_osm_transaction_data(buildings_gdf, transactions_lsoa)
+    return joined_data
+
 def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, transport_type):
     """
         transport type: 
@@ -394,33 +408,33 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, t
 def plot_lad_prices_random_subset(conn, lad_ids, building_dfs, lad_boundaries, transport_gdf, transport_type):
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore')
-    fig, ax = plt.subplots(3, 3, figsize=(12,12))
-    for i in range(3):
-        for j in range(3): 
-            lad_id = lad_ids[i * j]
-            buildings_gdf = find_residential_buildings(conn, lad_id, building_dfs)
-            lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
-            lad_name = lad_row.LAD21NM.values[0]
-            lad_geom = lad_row.geometry.values[0]
-            lad_bbox = lad_row.bbox.values[0]
-            lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
+        fig, ax = plt.subplots(3, 3, figsize=(12,12))
+        for i in range(3):
+            for j in range(3): 
+                lad_id = lad_ids[i * j]
+                buildings_gdf = find_residential_buildings(conn, lad_id, building_dfs)
+                lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
+                lad_name = lad_row.LAD21NM.values[0]
+                lad_geom = lad_row.geometry.values[0]
+                lad_bbox = lad_row.bbox.values[0]
+                lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
 
-            transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, transport_type)
-            house_transactions = find_transaction_bbox(conn, lad_bbox)
-            osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
+                transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, transport_type)
+                house_transactions = find_transaction_bbox(conn, lad_bbox)
+                osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
 
-            try: 
-                osm_prices_merged = gpd.sjoin(osm_prices_merged, lad_gdf, predicate = 'within')
-                lad_gdf.plot(ax = ax[i,j], facecolor = 'white', edgecolor = 'dimgray')
-                osm_prices_merged.plot(column = 'price_log', ax = ax[i,j], legend = True, cmap = 'viridis')
-                transport_gdf.plot(ax = ax[i,j], color = 'red', markersize = 10)
-                ax[i, j].set_title(f"log Price of Houses in {lad_name}", fontsize=8, fontweight='light')
-            except: 
-                pass
-            # custom_patch = mpatches.Patch(color='red', label='Transport Facilities')
-            # ax.legend(handles=[custom_patch], title="Legend")
-            plt.tight_layout()
-            plt.show()
+                try: 
+                    osm_prices_merged = gpd.sjoin(osm_prices_merged, lad_gdf, predicate = 'within')
+                    lad_gdf.plot(ax = ax[i,j], facecolor = 'white', edgecolor = 'dimgray')
+                    osm_prices_merged.plot(column = 'price_log', ax = ax[i,j], legend = True, cmap = 'viridis')
+                    transport_gdf.plot(ax = ax[i,j], color = 'red', markersize = 10)
+                    ax[i, j].set_title(f"log Price of Houses in {lad_name}", fontsize=8, fontweight='light')
+                except: 
+                    pass
+                # custom_patch = mpatches.Patch(color='red', label='Transport Facilities')
+                # ax.legend(handles=[custom_patch], title="Legend")
+                plt.tight_layout()
+                plt.show()
 
 def find_avg_lsoa_price_in_lad(conn, lad_id, lad_boundaries): 
     lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
@@ -566,7 +580,8 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, y_threshold=2
     lsoa_geom = lsoa_row.geometry.values[0]
     lsoa_bbox = lsoa_row.bbox.values[0]
 
-    houses_lsoa = find_transaction_bbox(connection, lsoa_bbox)
+    houses_lsoa = find_joined_osm_transaction_data_lsoa(lsoa_bbox)
+    houses_lsoa['area_m2'] = houses_lsoa.geometry.area
     houses_lsoa['log_price'] = np.log(houses_lsoa['price'].values)
     houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
 
