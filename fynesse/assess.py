@@ -508,7 +508,7 @@ def plot_house_price_changes(connection, lsoa_id):
     same_houses = {}
     for address, group in house_groups: 
         group = group.drop_duplicates('date_of_transfer')
-        if len(group) > 1: 
+        if len(group) >= 3: 
             same_houses[address] = group
     keys = list(same_houses.keys())
     sample_size = min(len(keys), 6)
