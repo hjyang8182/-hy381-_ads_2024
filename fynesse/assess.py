@@ -504,10 +504,9 @@ def find_transaction_lsoa(connection, lsoa_id):
     lsoa_houses = cur.fetchall()
     return pd.DataFrame(lsoa_houses)
 
-def plot_house_price_changes(connection, lsoa_id):
+def plot_house_price_changes_lsoa(connection, lsoa_id, transport_df):
     cur = connection.cursor(pymysql.cursors.DictCursor)
     houses_df = find_transaction_lsoa(connection, lsoa_id)
-    transport_df = find_transport_lsoa(connection, lsoa_id)
     if houses_df.empty:
         return
     creation_dates = np.unique(transport_df.creation_date.values)
@@ -545,6 +544,16 @@ def plot_house_price_changes(connection, lsoa_id):
     fig.suptitle(f"House Price Trends Over Time in {lsoa_id}")
     plt.tight_layout()
     plt.show()
+
+def plot_house_price_changes_lad(connection, lad_id, transport_df, transport_type, lad_boundaries):
+    cur = connection.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select unique lsoa_id from oa_translation_data where lad_id = '{lad_id}'")
+    transport_lad = find_transport_lad_id(transport_df, transport_type, lad_id, lad_boundaries)
+    lsoas = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
+    lsoas_sample = np.random.choice(lsoas, 5, replace = False)
+    for lsoa_id in lsoas_sample: 
+        plot_house_price_changes_lsoa(connection, lsoa_id, transport_lad)
+
 
 def plot_distance_to_transport_price_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, transport_df, transport_type):
     distances = []
