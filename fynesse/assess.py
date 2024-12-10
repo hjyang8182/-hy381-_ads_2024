@@ -524,7 +524,7 @@ def plot_house_price_changes(connection, lsoa_id):
 
     for idx in range(min(len(keys), 6)):
         key = keys[idx]
-        i, j = divmod(idx, 3)
+        i, j = divmod(idx, 2)
         house = same_houses[key]
         house['date_of_transfer_datetime'] = pd.to_datetime(house['date_of_transfer'])
         house = house.sort_values(by = 'date_of_transfer_datetime')
