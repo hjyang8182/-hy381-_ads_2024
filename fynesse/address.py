@@ -92,7 +92,7 @@ def k_fold_cross_validation_regularized(k, dataset, label_col, feature_cols, alp
 def fit_linear_model(poi_data_df, feature_cols, label_col, alpha, l1_wt): 
     features = poi_data_df[feature_cols].values
     labels = poi_data_df[label_col].values
-    m_linear_all_feat = sm.OLS(labels, all_features)
+    m_linear_all_feat = sm.OLS(labels, features)
     results_linear = m_linear_all_feat.fit_regularized(alpha = alpha, L1_wt = l1_wt)
     return results_linear.params
 
