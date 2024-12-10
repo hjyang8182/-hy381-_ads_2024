@@ -390,7 +390,6 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, t
         buildings_gdf = find_residential_buildings(conn, lad_id, building_dfs)
         lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
         lad_name = lad_row.LAD21NM.values[0]
-        lad_geom = lad_row.geometry.values[0]
         lad_bbox = lad_row.bbox.values[0]
         lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
 
@@ -657,7 +656,7 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs,
     ax[0].set_title(f"Clusters for houses in {lsoa_name}")
     ax[1].set_title(f"Prices and Transport Nodes for Houses in {lsoa_name}")
 
-def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_gdf, transport_type, lad_boundaries):
+def find_median_house_price_change_over_time(conn, lad_id):
     median_house_price = []
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"select lad_name from oa_translation_data where lad_id = '{lad_id}'")
@@ -674,6 +673,11 @@ def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_gdf, transp
             year_dict = {'lsoa_id': lsoa_id, 'year': year,'median_price': np.median(transaction['price'].values)}
             median_house_price.append(year_dict)
     median_house_price_df = pd.DataFrame(median_house_price)
+    median_house_price_df['pct_change'] = median_house_price_df['median_price'].pct_change() * 100 
+    return median_house_price_df
+
+def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_gdf, transport_type, lad_boundaries):
+    median_house_price_df = find_median_house_price_change_over_time(conn, lad_id)
     grouped_by_lsoa = median_house_price_df.groupby('lsoa_id')
     for lsoa_id, group in grouped_by_lsoa: 
         group = group.sort_values(by = 'year')
