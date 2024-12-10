@@ -311,7 +311,6 @@ def find_transport_bbox(transport_gdf, lad_gdf, transport_type):
     # cur.execute(f"select * from transport_node_data where longitude between {south} and {north} and latitude between {east} and {west} and stop_type in {type_codes}")
     transport_gdf = gpd.sjoin(transport_gdf, lad_gdf, predicate = 'within')
     transport_gdf = transport_gdf.drop(columns = 'index_right')
-    print(transport_gdf)
     transport_gdf = transport_gdf[np.isin(transport_gdf['StopType'], type_codes)]
     transport_gdf = gpd.GeoDataFrame(transport_gdf)
     return transport_gdf
