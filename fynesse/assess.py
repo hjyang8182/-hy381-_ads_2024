@@ -313,6 +313,7 @@ def find_transport_bbox(transport_gdf, lad_gdf, transport_type):
     transport_gdf = transport_gdf.drop(columns = 'index_right')
     transport_gdf = transport_gdf[np.isin(transport_gdf['StopType'], type_codes)]
     transport_gdf = gpd.GeoDataFrame(transport_gdf)
+    transport_gdf = transport_gdf.set_index('ATCOCode')
     return transport_gdf
 
 def find_transaction_lad_id(conn, lad_id, lad_boundaries): 
