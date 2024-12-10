@@ -660,7 +660,7 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs,
 def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_gdf, transport_type, lad_boundaries):
     median_house_price = []
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select lad_name, unique lsoa_id from oa_translation_data where lad_id = '{lad_id}'")
+    cur.execute(f"select lad_name, distinct lsoa_id from oa_translation_data where lad_id = '{lad_id}'")
     lad_name = cur.fetchall()[0]['lad_name']
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
     for lsoa_id in lsoa_ids:
