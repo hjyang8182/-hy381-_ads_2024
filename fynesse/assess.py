@@ -656,3 +656,30 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs,
         ax[0].scatter(coord[0], coord[1], color = 'red')
     ax[0].set_title(f"Clusters for houses in {lsoa_name}")
     ax[1].set_title(f"Prices and Transport Nodes for Houses in {lsoa_name}")
+
+def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_gdf, transport_type, lad_boundaries):
+    median_house_price = []
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select unique lsoa_id from oa_translation_data where lad_id = '{lad_id}'")
+    col_lsoas = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
+    for lsoa_id in col_lsoas:
+        transaction_data = find_transaction_lsoa(conn, lsoa_id)
+        transaction_data['year_of_transfer'] = pd.to_datetime(transaction_data['date_of_transfer']).dt.year
+        transactions_by_year = transaction_data.groupby('year_of_transfer')
+        for year, transaction in transactions_by_year: 
+            year_dict = {'lsoa_id': lsoa_id, 'year': year,'median_price': np.median(transaction['price'].values)}
+            median_house_price.append(year_dict)
+    median_house_price_df = pd.DataFrame(median_house_price)
+    grouped_by_lsoa = median_house_price_df.groupby('lsoa_id')
+    for lsoa_id, group in grouped_by_lsoa: 
+        years = group['year'].values
+        median_prices = group['median_price'].values
+        plt.plot(years, median_prices, label = lsoa_id)
+        plt.xlabel("Year")
+        plt.ylabel("Median Price of Houses in LSOA")
+        plt.title("Median House Price of LSOAs in City of London")
+    transport_df = find_transport_lad_id(transport_gdf, 'SUB', lad_id, lad_boundaries)
+    creation_years = pd.to_datetime(transport_df.CreationDateTime.dt.year.values)
+    for year in creation_years: 
+        plt.axvline(x = year, linestyle = '--', color = 'red', label = 'Creation Date of Tube Station')
+    plt.legend()
