@@ -535,7 +535,7 @@ def plot_house_price_changes_lsoa(connection, lsoa_id, transport_df):
         axs[i, j].scatter(date_of_transfer, prices, alpha = 0.6)
         axs[i, j].set_title(f"{key}", fontsize=8, fontweight='light')
         for date in creation_dates: 
-            if date >= np.min(house.date_of_transfer) and date <= np.max(house.date_of_transfer):
+            if date >= np.min(house.date_of_transfer_datetime) and date <= np.max(house.date_of_transfer_datetime):
                 date = mdates.date2num(date)
                 axs[i, j].axvline(x= date, color='red', linestyle='--', linewidth=1.5, label = 'Creation Date of Transport Facility')
         axs[i, j].xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
