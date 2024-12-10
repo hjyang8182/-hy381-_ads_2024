@@ -509,7 +509,7 @@ def plot_house_price_changes_lsoa(connection, lsoa_id, transport_df):
     houses_df = find_transaction_lsoa(connection, lsoa_id)
     if houses_df.empty:
         return
-    creation_dates = np.unique(transport_df.creation_date.values)
+    creation_dates = np.unique(transport_df['CreationDateTime'].values)
     house_groups = houses_df.groupby(['street','primary_addressable_object_name', 'secondary_addressable_object_name'])[['price', 'date_of_transfer', 'oa_id']]
     same_houses = {}
     for address, group in house_groups: 
