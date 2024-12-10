@@ -664,6 +664,7 @@ def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_gdf, transp
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
     for lsoa_id in lsoa_ids:
         transaction_data = find_transaction_lsoa(conn, lsoa_id)
+        print(transaction_data)
         transaction_data['year_of_transfer'] = pd.to_datetime(transaction_data['date_of_transfer']).dt.year
         transactions_by_year = transaction_data.groupby('year_of_transfer')
         for year, transaction in transactions_by_year: 
