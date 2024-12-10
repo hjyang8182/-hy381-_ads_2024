@@ -59,6 +59,36 @@ def k_fold_cross_validation(k, dataset, label_col, feature_cols):
         performances.append((train_performance,test_performance))
     return performances, model_coefs
 
+def k_fold_cross_validation_regularized(k, dataset, label_col, feature_cols, alpha, l1_wt):
+    performances = []
+    model_coefs = []
+    k_folds = split_dataset(k, dataset)
+    for i in range(k): 
+        # Prepare test data
+        test_data = k_folds[i]
+        test_indices = test_data.index.values
+        test_features = test_data.loc[test_indices][feature_cols].values
+        test_labels = test_data.loc[test_indices][label_col].values
+        
+        # Train on traindata 
+        train_data = pd.DataFrame(pd.concat([k_folds[j] for j in range(k) if j != i]))
+        train_indices = train_data.index.values
+        train_features = train_data.loc[train_indices][feature_cols].values
+        train_labels = train_data.loc[train_indices][label_col].values
+    
+        m_linear = sm.OLS(train_labels, train_features)
+        results_linear = m_linear.fit_regularized(alpha = alpha, L1_wt = l1_wt)
+        # if coefficients are largely different, overfitting 
+        model_coefs.append(results_linear.params)
+
+        train_pred = results_linear.predict(train_features)
+        train_performance = measure_performance(train_pred, train_labels)
+        # Test on test data
+        test_pred = results_linear.predict(test_features)
+        test_performance = measure_performance(test_pred, test_labels)
+        performances.append((train_performance,test_performance))
+    return performances, model_coefs
+
 def fit_linear_model(poi_data_df, feature_cols, label_col, alpha, l1_wt): 
     features = poi_data_df[feature_cols].values
     labels = poi_data_df[label_col].values
@@ -160,10 +190,10 @@ def k_fold_cross_validation_predict_students(k, dataset, feature_cols):
     return performances, model_coefs
 
 
-def fit_linear_model_student_pop_regularized(feature_cols, all_poi_data_df, alpha=0.0002, l1_wt=1.0): 
+def fit_linear_model_regularized(label_col, feature_cols, all_poi_data_df, alpha=0.0002, l1_wt=1.0): 
     all_features = all_poi_data_df[feature_cols].values.astype(float)
-    student_proportion = all_poi_data_df['L15'].values.astype(float)
+    population = all_poi_data_df[label_col].values.astype(float)
 
-    m_linear_all_feat = sm.OLS(student_proportion, all_features)
+    m_linear_all_feat = sm.OLS(population, all_features)
     results_linear = m_linear_all_feat.fit_regularized(alpha=alpha, L1_wt = l1_wt)
     return results_linear.params
