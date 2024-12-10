@@ -587,7 +587,7 @@ def plot_distance_to_transport_price_lad(conn, lad_id, lad_boundaries, lsoa_boun
         plt.title(f"Average Log Price of Houses of LSOAs in {lad_name} vs. Distance to {transport_type}")
     return distances, prices
     
-def find_dist_house_corr_lsoa(connection, lsoa_id, transport_lsoa, house_lsoa):
+def find_dist_house_corr_lsoa(connection, lsoa_id, transport_lsoa):
     avg_distances = np.array([])
     prices = np.array([])
     cur = connection.cursor(pymysql.cursors.DictCursor)
@@ -661,7 +661,7 @@ def find_median_house_price_change_over_time(conn, lad_id):
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"select lad_name from oa_translation_data where lad_id = '{lad_id}'")
     lad_name = cur.fetchall()[0]['lad_name']
-    cur.execute(f"select lsoa_id from oa_translation_data where lad_id = '{lad_id}'")
+    cur.execute(f"select unique lsoa_id from oa_translation_data where lad_id = '{lad_id}'")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
     for lsoa_id in lsoa_ids:
         transaction_data = find_transaction_lsoa(conn, lsoa_id)
