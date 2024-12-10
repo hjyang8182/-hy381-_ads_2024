@@ -661,8 +661,8 @@ def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_gdf, transp
     median_house_price = []
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"select unique lsoa_id from oa_translation_data where lad_id = '{lad_id}'")
-    col_lsoas = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
-    for lsoa_id in col_lsoas:
+    lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
+    for lsoa_id in lsoa_ids:
         transaction_data = find_transaction_lsoa(conn, lsoa_id)
         transaction_data['year_of_transfer'] = pd.to_datetime(transaction_data['date_of_transfer']).dt.year
         transactions_by_year = transaction_data.groupby('year_of_transfer')
