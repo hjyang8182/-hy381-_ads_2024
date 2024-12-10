@@ -689,4 +689,4 @@ def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_gdf, transp
             date = mdates.date2num(date)
             plt.axvline(x= date, color='red', linestyle='--', linewidth=1.5, label = 'Creation Date of Transport Facility')
     plt.legend(fontsize=8, loc='center left', bbox_to_anchor=(1, 0.5), framealpha=0.5)  
-    plt.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
