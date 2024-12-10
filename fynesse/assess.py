@@ -491,11 +491,10 @@ def find_dist_house_corr_lsoa(connection, lsoa_id, transport_lsoa, house_lsoa):
     return avg_distances, prices
 
 
-def find_transport_lsoa(connection, lsoa_id): 
-    cur = connection.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select * from transport_node_data where lsoa_id = '{lsoa_id}'")
-    oa_df = cur.fetchall()
-    return pd.DataFrame(oa_df)
+def find_transport_lsoa(lsoa_id, transport_df, transport_type, lsoa_boundaries): 
+    lad_row = lsoa_boundaries[lsoa_boundaries['LSOA21CD'] == lsoa_id]
+    lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
+    return find_transport_bbox(transport_df, lad_gdf, transport_type)
 
 def find_transaction_lsoa(connection, lsoa_id):
     cur = connection.cursor(pymysql.cursors.DictCursor)
