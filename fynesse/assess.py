@@ -520,7 +520,7 @@ def plot_house_price_changes(connection, lsoa_id):
     same_houses = dict(sorted(same_houses.items(), key=lambda item: len(item[1]), reverse=True))
     keys = list(same_houses.keys())
     sample_size = min(len(keys), 6)
-    fig, axs = plt.subplots(3, 2, figsize=(12, 12)) 
+    fig, axs = plt.subplots(3, 2, figsize=(8, 8)) 
 
     for idx in range(min(len(keys), 6)):
         key = keys[idx]
