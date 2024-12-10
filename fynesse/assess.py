@@ -677,10 +677,10 @@ def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_gdf, transp
     grouped_by_lsoa = median_house_price_df.groupby('lsoa_id')
     for lsoa_id, group in grouped_by_lsoa: 
         years = pd.to_datetime(group['year'].values)
-        print(years)
-        years = mdates.date2num(years)
+        dates = pd.to_datetime([f'{year}-01-01' for year in years])
+        years = mdates.date2num(dates)
         median_prices = group['median_price'].values
-        plt.plot(years, median_prices, label = lsoa_id)
+        plt.plot(dates, median_prices, label = lsoa_id)
         plt.xlabel("Year")
         plt.ylabel("Median Price of Houses in LSOA")
         plt.title(f"Median House Price of LSOAs in {lad_name}")
