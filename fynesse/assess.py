@@ -676,19 +676,15 @@ def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_gdf, transp
     median_house_price_df = pd.DataFrame(median_house_price)
     grouped_by_lsoa = median_house_price_df.groupby('lsoa_id')
     for lsoa_id, group in grouped_by_lsoa: 
-        years = pd.to_datetime(group['year'].values)
-        dates = pd.to_datetime([f'{year}-01-01' for year in years])
-        dates = mdates.date2num(dates)
+        years = group['year'].values
         median_prices = group['median_price'].values
-        plt.plot(dates, median_prices, label = lsoa_id)
+        plt.plot(years, median_prices, label = lsoa_id)
         plt.xlabel("Year")
         plt.ylabel("Median Price of Houses in LSOA")
         plt.title(f"Median House Price of LSOAs in {lad_name}")
     transport_df = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
-    creation_years = pd.to_datetime(transport_df.CreationDateTime.values)
+    creation_years = transport_df.CreationDateTime.dt.year.values
     for year in creation_years: 
-        if year >= (pd.to_datetime('2000-01-01')):
-            date = mdates.date2num(year)
-            plt.axvline(x= date, color='red', linestyle='--', linewidth=1.5, label = 'Creation Date of Transport Facility')
+        if year >= 2000:
+            plt.axvline(x = year, linestyle = '--', color = 'red', label = f'Creation Date of {transport_type}')
     plt.legend(fontsize=8, loc='center left', bbox_to_anchor=(1, 0.5), framealpha=0.5)  
-    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
