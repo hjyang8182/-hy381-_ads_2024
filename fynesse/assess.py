@@ -517,13 +517,13 @@ def plot_house_price_changes(connection, lsoa_id):
         group = group.drop_duplicates('date_of_transfer')
         if len(group) >= 3: 
             same_houses[address] = group
-    same_houses = dict(sorted(same_houses.items(), key=lambda item: len(item[1])))
+    same_houses = dict(sorted(same_houses.items(), key=lambda item: len(item[1], reverse=True)))
     keys = set(same_houses.keys())
     sample_size = min(len(keys), 6)
-    same_houses_sample = random.sample(keys, sample_size)
-    print(f"Samples: {same_houses_sample}")
     fig, axs = plt.subplots(3, 2, figsize=(12, 12)) 
-    for idx, key in enumerate(same_houses_sample):
+
+    for idx in range(min(len(keys), 6)):
+        key = keys[idx]
         i, j = divmod(idx, 3)
         house = same_houses[key]
         house['date_of_transfer_datetime'] = pd.to_datetime(house['date_of_transfer'])
