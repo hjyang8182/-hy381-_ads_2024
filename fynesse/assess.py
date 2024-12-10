@@ -678,7 +678,7 @@ def find_median_house_price_change_over_time(conn, lad_id):
 def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_gdf, transport_type, lad_boundaries):
     median_house_price_df = find_median_house_price_change_over_time(conn, lad_id)
     grouped_by_lsoa = median_house_price_df.groupby('lsoa_id')
-    cur = conn.cursor()
+    cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"select lad_name from oa_translation_data where lad_id = '{lad_id}'")
     lad_name = cur.fetchall()[0]['lad_name']
     for lsoa_id, group in grouped_by_lsoa: 
