@@ -685,4 +685,4 @@ def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_gdf, transp
     for year in creation_years: 
         if year >= pd.to_datetime('2000'):
             plt.axvline(x = year, linestyle = '--', color = 'red', label = f'Creation Date of {transport_type}')
-    plt.legend()
+    plt.legend(fontsize=8, loc='center left', bbox_to_anchor=(1, 0.5), framealpha=0.5)  
