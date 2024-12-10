@@ -683,9 +683,9 @@ def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_gdf, transp
         plt.ylabel("Median Price of Houses in LSOA")
         plt.title(f"Median House Price of LSOAs in {lad_name}")
     transport_df = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
-    creation_years = transport_df.CreationDateTime.values
+    creation_years = pd.to_datetime(transport_df.CreationDateTime.values)
     for year in creation_years: 
-        if year >= ('2000-01-01'):
+        if year >= (pd.to_datetime('2000-01-01')):
             date = mdates.date2num(date)
             plt.axvline(x= date, color='red', linestyle='--', linewidth=1.5, label = 'Creation Date of Transport Facility')
     plt.legend(fontsize=8, loc='center left', bbox_to_anchor=(1, 0.5), framealpha=0.5)  
