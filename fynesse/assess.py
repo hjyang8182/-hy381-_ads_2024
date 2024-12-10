@@ -523,28 +523,25 @@ def plot_house_price_changes(connection, lsoa_id):
     same_houses_sample = random.sample(keys, sample_size)
     print(f"Samples: {same_houses_sample}")
     fig, axs = plt.subplots(3, 2, figsize=(12, 12)) 
-    for i in range(3):
-        for j in range(2):
-            if i*j >= len(keys):
-                return
-            key = same_houses_sample[i*j]
-            house = same_houses[key]
-            house['date_of_transfer_datetime'] = pd.to_datetime(house['date_of_transfer'])
-            house = house.sort_values(by = 'date_of_transfer_datetime')
-            oa_id = house.oa_id.values[0]
-            date_of_transfer = mdates.date2num(house.date_of_transfer.values)
-            prices = house.price.values
-            axs[i, j].plot(date_of_transfer, prices)  
-            axs[i, j].scatter(date_of_transfer, prices, alpha = 0.6)
-            axs[i, j].set_title(f"{key}", fontsize=8, fontweight='light')
-            for date in creation_dates: 
-                if date >= np.min(house.date_of_transfer) and date <= np.max(house.date_of_transfer):
-                    date = mdates.date2num(date)
-                    axs[i, j].axvline(x= date, color='red', linestyle='--', linewidth=1.5, label = 'Creation Date of Transport Facility')
-            axs[i, j].xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-            for tick in axs[i, j].get_xticklabels():
-                tick.set_rotation(45)  # Rotate tick labels by 45 degrees
-            axs[i,j].legend()
+    for idx, key in enumerate(same_houses_sample):
+        i, j = divmod(idx, 3)
+        house = same_houses[key]
+        house['date_of_transfer_datetime'] = pd.to_datetime(house['date_of_transfer'])
+        house = house.sort_values(by = 'date_of_transfer_datetime')
+        oa_id = house.oa_id.values[0]
+        date_of_transfer = mdates.date2num(house.date_of_transfer.values)
+        prices = house.price.values
+        axs[i, j].plot(date_of_transfer, prices)  
+        axs[i, j].scatter(date_of_transfer, prices, alpha = 0.6)
+        axs[i, j].set_title(f"{key}", fontsize=8, fontweight='light')
+        for date in creation_dates: 
+            if date >= np.min(house.date_of_transfer) and date <= np.max(house.date_of_transfer):
+                date = mdates.date2num(date)
+                axs[i, j].axvline(x= date, color='red', linestyle='--', linewidth=1.5, label = 'Creation Date of Transport Facility')
+        axs[i, j].xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        for tick in axs[i, j].get_xticklabels():
+            tick.set_rotation(45)  # Rotate tick labels by 45 degrees
+        axs[i,j].legend()
     fig.suptitle(f"House Price Trends Over Time in {lsoa_id}")
     plt.tight_layout()
     plt.show()
