@@ -530,7 +530,7 @@ def compute_pairwise_distances(house_gdf, transport_gdf):
     # Extract coordinates as numpy arrays
     coords1 = house_gdf.geometry.apply(lambda geom: (geom.x, geom.y)).to_list()
     coords2 = transport_gdf.geometry.apply(lambda geom: (geom.centroid.x, geom.centroid.y)).to_list()
-
+    print(coords2)
     # Compute pairwise distances using scipy
     distances = cdist(coords1, coords2, metric='euclidean')
 
