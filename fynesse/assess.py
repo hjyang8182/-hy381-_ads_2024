@@ -507,7 +507,7 @@ def find_median_pct_inc_after_transport_vs_dist(conn, lad_id, transport_gdf, tra
     pct_incs = []
     avg_dists = []
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 50")
+    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 10")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
     transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
     if transport_lad.empty: 
@@ -533,7 +533,7 @@ def find_median_pct_inc_after_transport_vs_car_ava(conn, lad_id, transport_gdf, 
     pct_incs = []
     no_car_proportions = []
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 50")
+    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 10")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
     transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
     if transport_lad.empty: 
@@ -562,7 +562,7 @@ def find_median_pct_inc_after_transport_vs_travel_method(conn, lad_id, transport
     pct_incs = []
     transport_usages = []
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 50")
+    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 10")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
     transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
     if transport_lad.empty: 
@@ -589,7 +589,7 @@ def find_median_pct_inc_after_transport_vs_travel_method(conn, lad_id, transport
 
 def find_yearly_pct_inc_after_transport(conn, lad_id, transport_gdf, transport_type, lad_boundaries):
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 50")
+    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 10")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
     transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
     if transport_lad.empty: 
