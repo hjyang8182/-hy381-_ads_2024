@@ -546,7 +546,6 @@ def find_median_pct_inc_after_transport_vs_car_ava(conn, lad_id, transport_gdf, 
         distance_df_grouped = distance_df.groupby(['lsoa_id', 'transport_index'])
         cur = conn.cursor(pymysql.cursors.DictCursor)
         cur.execute(f"select * from car_availability_data where lsoa_id = '{lsoa_id}'")
-        print(cur.fetchall())
         car_availability = cur.fetchall()[0]['no_car_proportion']
         for idx, distance_df in distance_df_grouped: 
             creation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
