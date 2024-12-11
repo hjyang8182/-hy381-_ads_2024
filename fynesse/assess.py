@@ -558,6 +558,35 @@ def find_median_pct_inc_after_transport_vs_car_ava(conn, lad_id, transport_gdf, 
             pct_incs.append(pct_inc)
     return pct_incs, no_car_proportions
 
+def find_median_pct_inc_after_transport_vs_travel_method(conn, lad_id, transport_gdf, transport_type, lad_boundaries):
+    pct_incs = []
+    transport_usages = []
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"SELECT unique lsoa_id FROM where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 50")
+    lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
+    transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
+    if transport_lad.empty: 
+        return
+    for lsoa_id in lsoa_ids:
+        # nearest transport facility to the lsoa
+        distance_df = find_distance_to_closest_transport(conn, lsoa_id, transport_lad)
+        if distance_df is None: 
+            continue
+        distance_df_grouped = distance_df.groupby(['lsoa_id', 'transport_index'])
+        cur = conn.cursor(pymysql.cursors.DictCursor)
+        cur.execute(f"select * from method_of_travel_data where lsoa_id = '{lsoa_id}'")
+        transport_usage  = cur.fetchall()[0][transport_type]
+        for idx, distance_df in distance_df_grouped: 
+            creation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
+            median_before = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) < creation_year]['price'].values)
+            median_after = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) >= creation_year]['price'].values)
+            median_before = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) < creation_year]['price'].values)
+            median_after = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) >= creation_year]['price'].values)
+            pct_inc = (median_after - median_before)/median_before * 100
+            transport_usages.append(transport_usage)
+            pct_incs.append(pct_inc)
+    return pct_incs, transport_usages
+
 def find_yearly_pct_inc_after_transport(conn, lad_id, transport_gdf, transport_type, lad_boundaries):
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 50")
