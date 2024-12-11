@@ -615,6 +615,49 @@ def find_yearly_pct_inc_after_transport(conn, lad_id, transport_gdf, transport_t
                 pct_change_vals = np.concatenate([pct_change_vals, median_prices['pct_change'].values])
     return years_after_creation_vals, pct_change_vals     
 
+def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundaries):
+    feature_df = {}
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 50")
+    lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
+    transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
+    if transport_lad.empty: 
+        return
+    years_after_creation_vals = np.array([])
+    pct_change_vals = np.array([])
+    transport_usage_vals = np.array([])
+    car_availability_vals = np.array([])
+    for lsoa_id in lsoa_ids:
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore')
+            distance_df = find_distance_to_closest_transport(conn, lsoa_id, transport_lad)
+            if distance_df is None: 
+                continue
+            distance_df_grouped = distance_df.groupby(['lsoa_id', 'transport_index'])
+            cur = conn.cursor(pymysql.cursors.DictCursor)
+            cur.execute(f"select mt.*, ca.* from method_of_travel_data as mt join car_availability_data as ca on ca.lsoa_id = mt.lsoa_id where ca.lsoa_id = '{lsoa_id}'")
+            census_results  = cur.fetchall()[0]
+            transport_usage = census_results[transport_type]
+            car_availability = census_results['no_car_proportion']
+            for idx, distance_df in distance_df_grouped: 
+                creation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
+                distance_df_after = distance_df[pd.to_datetime(distance_df['date_of_transfer']).dt.year >= creation_year]
+                distance_df_after['years_after_creation'] = pd.to_datetime(distance_df['date_of_transfer']).dt.year  - creation_year
+                avg_dist = np.mean(distance_df['distance'].values)
+                median_prices = distance_df_after.groupby('years_after_creation')['price'].median().reset_index()
+                median_prices['pct_change'] = median_prices['price'].pct_change()
+                median_prices = median_prices.dropna()
+                years_after_creation_vals = np.concatenate([years_after_creation_vals, median_prices['years_after_creation'].values])
+                pct_change_vals = np.concatenate([pct_change_vals, median_prices['pct_change'].values])
+                transport_usage_vals = np.concatenate([transport_usage_vals, np.repeat(transport_usage, len(median_prices))])
+                car_availability_vals = np.concatenate([car_availability_vals, np.repeat(car_availability, len(median_prices))])
+    features_df = pd.DataFrame({
+        'years_after_creation': years_after_creation_vals,
+        'pct_change': pct_change_vals,
+        'transport_usage': transport_usage_vals, 
+        'car_availability': car_availability_vals
+        })
+    return features_df
 
 def compute_pairwise_distances(house_gdf, transport_gdf):
     # Extract coordinates as numpy arrays
