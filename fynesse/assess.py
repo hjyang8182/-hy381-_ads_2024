@@ -509,6 +509,8 @@ def find_median_pct_inc_after_transport(conn, lad_id, transport_gdf, transport_t
     cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 50")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
     transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
+    if transport_lad.empty: 
+        return
     for lsoa_id in lsoa_ids:
         distance_df = find_distance_to_closest_transport(conn, lsoa_id, transport_lad)
         if distance_df is None: 
@@ -530,7 +532,6 @@ def compute_pairwise_distances(house_gdf, transport_gdf):
     # Extract coordinates as numpy arrays
     coords1 = house_gdf.geometry.apply(lambda geom: (geom.x, geom.y)).to_list()
     coords2 = transport_gdf.geometry.apply(lambda geom: (geom.centroid.x, geom.centroid.y)).to_list()
-    print(coords2)
     # Compute pairwise distances using scipy
     distances = cdist(coords1, coords2, metric='euclidean')
 
