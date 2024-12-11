@@ -3,6 +3,7 @@ from .config import *
 from .access import *
 import matplotlib.pyplot as plt
 import numpy as np
+import itertools
 import osmnx as ox
 import pandas as pd
 from shapely.geometry import Point, Polygon
@@ -748,7 +749,8 @@ def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_gdf, transp
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"select lad_name from oa_translation_data where lad_id = '{lad_id}'")
     lad_name = cur.fetchall()[0]['lad_name']
-    for lsoa_id, group in grouped_by_lsoa: 
+    num_lsoas = min(len(grouped_by_lsoa, 10))
+    for lsoa_id, group in itertools.islice(grouped_by_lsoa, num_lsoas): 
         group = group.sort_values(by = 'year')
         years = group['year'].values
         median_prices = group['median_price'].values
