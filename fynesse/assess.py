@@ -492,6 +492,8 @@ def plot_avg_lsoa_prices_in_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, t
 def find_distance_to_closest_transport(connection, lsoa_id, transport_lad):
     cur = connection.cursor(pymysql.cursors.DictCursor)
     houses_lsoa = find_transaction_lsoa(connection, lsoa_id)
+    if houses_lsoa.empty: 
+        return
     houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
     distance_df = compute_pairwise_distances(houses_lsoa, transport_lad)
     closest_distances_df = find_closest_points(distance_df)
@@ -509,6 +511,8 @@ def find_median_pct_inc_after_transport(conn, lad_id, transport_gdf, transport_t
     transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
     for lsoa_id in lsoa_ids:
         distance_df = find_distance_to_closest_transport(conn, lsoa_id, transport_lad)
+        if distance_df is None: 
+            continue
         distance_df_grouped = distance_df.groupby(['lsoa_id', 'transport_index'])
         for idx, distance_df in distance_df_grouped: 
             creation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
