@@ -478,10 +478,10 @@ def plot_avg_lsoa_prices_in_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, t
         lsoa_avg_merged_gdf.plot(ax = ax, column = 'avg_price', cmap = 'viridis', legend=True)
         transport_gdf.plot(ax = ax, color = 'red')
     
-def find_distance_to_closest_transport(connection, lad_id, transport_df, transport_type, lad_boundaries):
-    transport_lsoa = find_transport_lad_id(transport_df, transport_type, lad_id, lad_boundaries)
+def find_distance_to_closest_transport(connection, lsoa_id, transport_df, transport_type, lsoa_boundaries):
+    transport_lsoa = find_transport_lsoa(lsoa_id, transport_df, transport_type, lsoa_boundaries)
     cur = connection.cursor(pymysql.cursors.DictCursor)
-    houses_lsoa = find_transaction_lad_id_subset(connection, lad_id, lad_boundaries)
+    houses_lsoa = find_transaction_lsoa(connection, lsoa_id)
     houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
     distance_df = compute_pairwise_distances(houses_lsoa, transport_lsoa)
     closest_distances_df = find_closest_points(distance_df)
