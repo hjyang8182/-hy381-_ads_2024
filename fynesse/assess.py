@@ -455,7 +455,7 @@ def find_avg_lsoa_price_in_lad(conn, lad_id, lad_boundaries):
     avg_lsoas_col = cur.fetchall()
     return avg_lsoas_col 
 
-def plot_avg_lsoa_prices_in_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, transport_gdf):
+def plot_avg_lsoa_prices_in_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, transport_gdf, transport_type):
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore')
         avg_lsoa_prices = find_avg_lsoa_price_in_lad(conn, lad_id, lad_boundaries)
@@ -470,7 +470,7 @@ def plot_avg_lsoa_prices_in_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, t
         lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
 
         lsoa_avg_merged_gdf = gpd.sjoin(lsoa_avg_merged_gdf, lad_gdf, predicate = 'within')
-        transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, 'SUB')
+        transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, transport_type)
         fig, ax = plt.subplots()
         lad_gdf.plot(ax = ax, facecolor = 'white', edgecolor = 'dimgray')
         lsoa_avg_merged_gdf['avg(price)'] = np.log(lsoa_avg_merged_gdf['avg(price)'].astype(float))
