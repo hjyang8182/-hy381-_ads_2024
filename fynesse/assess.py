@@ -589,7 +589,7 @@ def plot_distance_to_transport_price_lad(conn, lad_id, lad_boundaries, lsoa_boun
 def find_dist_house_corr_lsoa(connection, lsoa_id, transport_lsoa):
     avg_distances = np.array([])
     prices = np.array([])
-    houses_lsoa = find_transaction_lsoa(connection. lsoa_id)
+    houses_lsoa = find_transaction_lsoa(connection, lsoa_id)
     houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
     houses_lsoa['avg_distance'] = houses_lsoa.geometry.apply(lambda house: find_avg_distance(house, transport_lsoa))
     avg_distances = np.append(avg_distances, houses_lsoa['avg_distance'].values)
