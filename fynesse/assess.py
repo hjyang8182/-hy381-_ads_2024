@@ -495,17 +495,32 @@ def find_distance_to_closest_transport(connection, lsoa_id, transport_lad):
     houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
     distance_df = compute_pairwise_distances(houses_lsoa, transport_lad)
     closest_distances_df = find_closest_points(distance_df)
-    closest_distances_with_prices = closest_distances_df.merge(houses_lsoa, left_on = 'house_index', right_index = True )
+    closest_distances_with_prices = closest_distances_df.merge(houses_lsoa, left_on = 'house_index', right_index = True)
+    transport_lad = transport_lad.reset_index(drop = True)
     closest_distances_with_prices_transport = closest_distances_with_prices.merge(transport_lad[['CreationDateTime', 'ATCOCode', 'StopType']], left_on = 'transport_index', right_index = True)
     return closest_distances_with_prices_transport
 
-def find_transaction_lad_id_subset(conn, lad_id, lad_boundaries): 
-    lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
-    lad_bbox = lad_row.bbox.values[0]
-    west, south, east, north = lad_bbox
+def find_median_pct_inc_after_transport(conn, lad_id, transport_gdf, lad_boundaries):
+    pct_incs = []
+    avg_dists = []
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select * from prices_coordinates_oa_data where latitude between {south} and {north} and longitude between {west} and {east} and date_of_transfer >= 2020-01-01 ORDER BY RAND() LIMIT 50")
-    transaction_df = pd.DataFrame(cur.fetchall())
+    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 50")
+    lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
+    transport_lad = find_transport_lad_id(transport_gdf, lad_id, lad_boundaries)
+    for lsoa_id in lsoa_ids:
+        distance_df = find_distance_to_closest_transport(conn, lsoa_id, transport_lad)
+        distance_df_grouped = distance_df.groupby(['lsoa_id', 'transport_index'])
+        for idx, distance_df in distance_df_grouped: 
+            creation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
+            median_before = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) < creation_year]['price'].values)
+            median_after = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) >= creation_year]['price'].values)
+            median_before = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) < creation_year]['price'].values)
+            median_after = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) >= creation_year]['price'].values)
+            pct_inc = (median_after - median_before)/median_before * 100
+            avg_dist = np.mean(distance_df['distance'].values)
+            pct_incs.append(pct_inc)
+            avg_dists.append(avg_dist)
+            
 def compute_pairwise_distances(house_gdf, transport_gdf):
     # Extract coordinates as numpy arrays
     coords1 = house_gdf.geometry.apply(lambda geom: (geom.x, geom.y)).to_list()
