@@ -601,6 +601,21 @@ def find_dist_house_corr_lsoa(connection, lsoa_id, transport_lsoa):
     plt.scatter(avg_distances, prices)
     return avg_distances, prices
 
+def find_dist_house_corr_lsoa(connection, lsoa_id, transport_lsoa):
+    avg_distances = np.array([])
+    prices = np.array([])
+    cur = connection.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select lsoa_name from oa_boundary data where lsoa_id = {lsoa_id}")
+    lsoa_name = cur.fetchall()[0]['lsoa_name']
+    houses_lsoa = find_transaction_lsoa(lsoa_name)
+    houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
+    houses_lsoa['avg_distance'] = houses_lsoa.geometry.apply(lambda house: find_avg_distance(house, transport_lsoa))
+    avg_distances = np.append(avg_distances, houses_lsoa['avg_distance'].values)
+    prices = np.append(prices, houses_lsoa['price'].values)
+    # plt.figure()
+    # plt.scatter(avg_distances, prices)
+    return avg_distances, prices
+
 def find_avg_distance(house_point, transport_df):
     distances = transport_df.distance(house_point)
     return distances.mean()
