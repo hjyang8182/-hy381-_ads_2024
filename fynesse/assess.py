@@ -595,8 +595,8 @@ def find_dist_house_corr_lsoa(connection, lsoa_id, transport_lsoa):
     houses_lsoa['avg_distance'] = houses_lsoa.geometry.apply(lambda house: find_avg_distance(house, transport_lsoa))
     avg_distances = np.append(avg_distances, houses_lsoa['avg_distance'].values)
     prices = np.append(prices, houses_lsoa['price'].values)
-    plt.figure()
-    plt.scatter(avg_distances, prices)
+    # plt.figure()
+    # plt.scatter(avg_distances, prices)
     return avg_distances, prices
 
 def find_dist_house_corr_lsoa(connection, lsoa_id, transport_lsoa):
