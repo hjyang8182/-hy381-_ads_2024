@@ -554,7 +554,9 @@ def find_yearly_pct_inc_after_transport(conn, lad_id, transport_gdf, transport_t
                 median_prices = median_prices.dropna()
                 years_after_creation_vals = np.concatenate([years_after_creation_vals, median_prices['years_after_creation'].values])
                 pct_change_vals = np.concatenate([pct_change_vals, median_prices['pct_change'].values])
-    return years_after_creation_vals, pct_change_vals            
+    return years_after_creation_vals, pct_change_vals     
+
+       
 def compute_pairwise_distances(house_gdf, transport_gdf):
     # Extract coordinates as numpy arrays
     coords1 = house_gdf.geometry.apply(lambda geom: (geom.x, geom.y)).to_list()
