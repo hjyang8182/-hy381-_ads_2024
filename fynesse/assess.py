@@ -535,21 +535,26 @@ def find_yearly_pct_inc_after_transport(conn, lad_id, transport_gdf, transport_t
     transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
     if transport_lad.empty: 
         return
+    years_after_creation_vals = np.array([])
+    pct_change_vals = np.array([])
     for lsoa_id in lsoa_ids:
-        distance_df = find_distance_to_closest_transport(conn, lsoa_id, transport_lad)
-        if distance_df is None: 
-            continue
-        distance_df_grouped = distance_df.groupby(['lsoa_id', 'transport_index'])
-        for idx, distance_df in distance_df_grouped: 
-            creation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
-            distance_df_after = distance_df[pd.to_datetime(distance_df['date_of_transfer']).dt.year >= creation_year]
-            distance_df_after['years_after_creation'] = pd.to_datetime(distance_df['date_of_transfer']).dt.year  - creation_year
-            
-            median_prices = distance_df_after.groupby('years_after_creation')['price'].median().reset_index()
-            median_prices['pct_change'] = median_prices['price'].pct_change()
-            median_prices = median_prices.dropna()
-    return median_prices['years_after_creation'].values, median_prices['pct_change'].values
-            
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore')
+            distance_df = find_distance_to_closest_transport(conn, lsoa_id, transport_lad)
+            if distance_df is None: 
+                continue
+            distance_df_grouped = distance_df.groupby(['lsoa_id', 'transport_index'])
+            for idx, distance_df in distance_df_grouped: 
+                creation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
+                distance_df_after = distance_df[pd.to_datetime(distance_df['date_of_transfer']).dt.year >= creation_year]
+                distance_df_after['years_after_creation'] = pd.to_datetime(distance_df['date_of_transfer']).dt.year  - creation_year
+                
+                median_prices = distance_df_after.groupby('years_after_creation')['price'].median().reset_index()
+                median_prices['pct_change'] = median_prices['price'].pct_change()
+                median_prices = median_prices.dropna()
+                years_after_creation_vals = np.concatenate([years_after_creation_vals, median_prices['years_after_creation'].values])
+                pct_change_vals = np.concatenate([pct_change_vals, median_prices['pct_change'].values])
+    return years_after_creation_vals, pct_change_vals            
 def compute_pairwise_distances(house_gdf, transport_gdf):
     # Extract coordinates as numpy arrays
     coords1 = house_gdf.geometry.apply(lambda geom: (geom.x, geom.y)).to_list()
