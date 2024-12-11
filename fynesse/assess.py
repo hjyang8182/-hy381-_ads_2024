@@ -17,6 +17,7 @@ import random
 import numpy as np
 from scipy.spatial.distance import cdist
 import warnings
+from matplotlib.patches import Patch
 """These are the types of import we might expect in this file
 import pandas
 import bokeh
@@ -321,14 +322,14 @@ def find_transport_bbox(transport_gdf, lad_gdf, transport_type):
 def find_transaction_lad_id(conn, lad_id, lad_boundaries): 
     lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
     lad_bbox = lad_row.bbox.values[0]
-    return find_transaction_bbox(conn, lad_bbox)
+    return find_transaction_bbox_after_2020(conn, lad_bbox)
 
 def find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries): 
     lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
     lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
     return find_transport_bbox(transport_gdf, lad_gdf, transport_type)
 
-def find_transaction_bbox(conn, bbox): 
+def find_transaction_bbox_after_2020(conn, bbox): 
     """
         Given a bounding box, find house purchase transactions within the box
 
@@ -337,6 +338,13 @@ def find_transaction_bbox(conn, bbox):
         returns: 
         - transaction_df: df consisting of queried transaction data from prices_coordinates_oa_data
     """
+    west, south, east, north = bbox
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select * from prices_coordinates_oa_data where latitude between {south} and {north} and longitude between {west} and {east} and date_of_transfer >= 2020-01-01")
+    transaction_df = pd.DataFrame(cur.fetchall())
+    return transaction_df
+
+def find_all_transactions_bbox(conn, bbox): 
     west, south, east, north = bbox
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"select * from prices_coordinates_oa_data where latitude between {south} and {north} and longitude between {west} and {east} and date_of_transfer >= 2020-01-01")
@@ -397,7 +405,7 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, t
         lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
 
         transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, transport_type)
-        house_transactions = find_transaction_bbox(conn, lad_bbox)
+        house_transactions = find_transaction_bbox_after_2020(conn, lad_bbox)
         osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
 
         osm_prices_merged = gpd.sjoin(osm_prices_merged, lad_gdf, predicate = 'within')
@@ -427,7 +435,7 @@ def plot_lad_prices_random_subset(conn, lad_ids, building_dfs, lad_boundaries, t
                 lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
 
                 transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, transport_type)
-                house_transactions = find_transaction_bbox(conn, lad_bbox)
+                house_transactions = find_transaction_bbox_after_2020(conn, lad_bbox)
                 osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
 
                 try: 
@@ -477,6 +485,9 @@ def plot_avg_lsoa_prices_in_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, t
         lsoa_avg_merged_gdf['avg_price'] = np.log(lsoa_avg_merged_gdf['avg_price'].astype(float))
         lsoa_avg_merged_gdf.plot(ax = ax, column = 'avg_price', cmap = 'viridis', legend=True)
         transport_gdf.plot(ax = ax, color = 'red')
+        plt.title("Average House Price per LSOA in LAD")
+        custom_patch = mpatches.Patch(color='red', label='Transport Facility')
+        plt.legend(handles=[custom_patch], title="Legend", loc='center left', bbox_to_anchor=(1, 0.5), framealpha=0.5)
     
 def find_distance_to_closest_transport(connection, lsoa_id, transport_lad):
     cur = connection.cursor(pymysql.cursors.DictCursor)
