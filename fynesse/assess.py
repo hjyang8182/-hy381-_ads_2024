@@ -590,12 +590,14 @@ def find_dist_house_corr_lsoa(connection, lsoa_id, transport_lsoa):
     avg_distances = np.array([])
     prices = np.array([])
     houses_lsoa = find_transaction_lsoa(connection, lsoa_id)
-    if houses_lsoa.empty: 
-        return
-    houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
-    houses_lsoa['avg_distance'] = houses_lsoa.geometry.apply(lambda house: find_avg_distance(house, transport_lsoa))
-    avg_distances = np.append(avg_distances, houses_lsoa['avg_distance'].values)
-    prices = np.append(prices, houses_lsoa['price'].values)
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore')
+        if houses_lsoa.empty: 
+            return
+        houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
+        houses_lsoa['avg_distance'] = houses_lsoa.geometry.apply(lambda house: find_avg_distance(house, transport_lsoa))
+        avg_distances = np.append(avg_distances, houses_lsoa['avg_distance'].values)
+        prices = np.append(prices, houses_lsoa['price'].values)
     # plt.figure()
     # plt.scatter(avg_distances, prices)
     return avg_distances, prices
