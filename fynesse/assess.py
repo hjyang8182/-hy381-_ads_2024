@@ -556,7 +556,7 @@ def find_yearly_pct_inc_after_transport(conn, lad_id, transport_gdf, transport_t
                 pct_change_vals = np.concatenate([pct_change_vals, median_prices['pct_change'].values])
     return years_after_creation_vals, pct_change_vals     
 
-       
+
 def compute_pairwise_distances(house_gdf, transport_gdf):
     # Extract coordinates as numpy arrays
     coords1 = house_gdf.geometry.apply(lambda geom: (geom.x, geom.y)).to_list()
@@ -603,11 +603,11 @@ def plot_house_price_changes_lsoa(connection, lsoa_id, transport_df):
     same_houses = dict(sorted(same_houses.items(), key=lambda item: len(item[1]), reverse=True))
     keys = list(same_houses.keys())
     sample_size = min(len(keys), 6)
-    fig, axs = plt.subplots(3, 2, figsize=(8, 8)) 
+    fig, axs = plt.subplots(2, 3, figsize=(7,7)) 
 
     for idx in range(min(len(keys), 6)):
         key = keys[idx]
-        i, j = divmod(idx, 2)
+        i, j = divmod(idx, 3)
         house = same_houses[key]
         house['date_of_transfer_datetime'] = pd.to_datetime(house['date_of_transfer'])
         house = house.sort_values(by = 'date_of_transfer_datetime')
