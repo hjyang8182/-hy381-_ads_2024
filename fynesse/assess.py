@@ -520,6 +520,7 @@ def find_median_pct_inc_after_transport(conn, lad_id, transport_gdf, lad_boundar
             avg_dist = np.mean(distance_df['distance'].values)
             pct_incs.append(pct_inc)
             avg_dists.append(avg_dist)
+    return pct_incs, avg_dists
             
 def compute_pairwise_distances(house_gdf, transport_gdf):
     # Extract coordinates as numpy arrays
