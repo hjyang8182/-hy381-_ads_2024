@@ -600,7 +600,7 @@ def find_dist_house_corr_lsoa(connection, lsoa_id, transport_lsoa):
         prices = np.append(prices, houses_lsoa['price'].values)
     # plt.figure()
     # plt.scatter(avg_distances, prices)
-    return avg_distances, prices
+    return houses_lsoa
 
 def find_avg_distance(house_point, transport_df):
     distances = transport_df.distance(house_point)
