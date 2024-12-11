@@ -15,6 +15,7 @@ import matplotlib.dates as mdates
 import matplotlib.patches as mpatches
 import random
 import numpy as np
+from scipy.spatial import cdist
 import warnings
 """These are the types of import we might expect in this file
 import pandas
@@ -477,21 +478,38 @@ def plot_avg_lsoa_prices_in_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, t
         lsoa_avg_merged_gdf.plot(ax = ax, column = 'avg_price', cmap = 'viridis', legend=True)
         transport_gdf.plot(ax = ax, color = 'red')
     
-def find_dist_house_corr_lsoa(connection, lsoa_id, transport_lsoa, house_lsoa):
-    avg_distances = np.array([])
-    prices = np.array([])
+def find_dist_house_corr_lsoa(connection, lsoa_id, transport_df, transport_type, lsoa_boundaries):
+    transport_lsoa = find_transport_lsoa(lsoa_id, transport_df, transport_type, lsoa_boundaries)
     cur = connection.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"select lsoa_name from oa_boundary data where lsoa_id = {lsoa_id}")
     lsoa_name = cur.fetchall()[0]['lsoa_name']
     houses_lsoa = find_transaction_lsoa(lsoa_name)
     houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
-    houses_lsoa['avg_distance'] = houses_lsoa.geometry.apply(lambda house: find_avg_distance(house, transport_lsoa))
-    avg_distances = np.append(avg_distances, houses_lsoa['avg_distance'].values)
-    prices = np.append(prices, houses_lsoa['price'].values)
-    plt.figure()
-    plt.scatter(avg_distances, prices)
-    return avg_distances, prices
+    
+    distance_df = compute_pairwise_distances(houses_lsoa, transport_lsoa)
+    closest_distances_df = find_closest_points(distance_df)
+    closest_distances_with_prices = closest_distances_df.merge(houses_lsoa, left_on = 'house_index', right_index = True )
+    return closest_distances_with_prices
 
+def compute_pairwise_distances(house_gdf, transport_gdf):
+    # Extract coordinates as numpy arrays
+    coords1 = house_gdf.geometry.apply(lambda geom: (geom.x, geom.y)).to_list()
+    coords2 = transport_gdf.geometry.apply(lambda geom: (geom.x, geom.y)).to_list()
+
+    # Compute pairwise distances using scipy
+    distances = cdist(coords1, coords2, metric='euclidean')
+
+    # Flatten to DataFrame
+    distance_df = pd.DataFrame(
+        [(i, j, distances[i, j]) for i in range(len(coords1)) for j in range(len(coords2))],
+        columns=['house_index', 'transport_index', 'distance']
+    )
+    return distance_df
+
+def find_closest_points(distance_df):
+    # Find the closest point in gdf2 for each point in gdf1
+    closest_df = distance_df.loc[distance_df.groupby('house_index')['distance'].idxmin()].reset_index(drop=True)
+    return closest_df
 
 def find_transport_lsoa(lsoa_id, transport_df, transport_type, lsoa_boundaries): 
     lad_row = lsoa_boundaries[lsoa_boundaries['LSOA21CD'] == lsoa_id]
@@ -588,25 +606,6 @@ def plot_distance_to_transport_price_lad(conn, lad_id, lad_boundaries, lsoa_boun
         plt.title(f"Average Log Price of Houses of LSOAs in {lad_name} vs. Distance to {transport_type}")
     return distances, prices
     
-def find_dist_house_corr_lsoa(connection, lsoa_id, transport_lsoa):
-    avg_distances = np.array([])
-    prices = np.array([])
-    houses_lsoa = find_transaction_lsoa(connection, lsoa_id)
-    with warnings.catch_warnings():
-        warnings.filterwarnings('ignore')
-        if houses_lsoa.empty: 
-            return
-        houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
-        houses_lsoa['avg_distance'] = houses_lsoa.geometry.apply(lambda house: find_avg_distance(house, transport_lsoa))
-        avg_distances = np.append(avg_distances, houses_lsoa['avg_distance'].values)
-        prices = np.append(prices, houses_lsoa['price'].values)
-    # plt.figure()
-    # plt.scatter(avg_distances, prices)
-    return houses_lsoa
-
-def find_avg_distance(house_point, transport_df):
-    distances = transport_df.distance(house_point)
-    return distances.mean()
 
 def get_lsoa_house_clusters(houses_lsoa): 
     property_types = ['D', 'S', 'T', 'F', 'O']
