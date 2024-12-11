@@ -486,7 +486,8 @@ def find_distance_to_closest_transport(connection, lsoa_id, transport_df, transp
     distance_df = compute_pairwise_distances(houses_lsoa, transport_lsoa)
     closest_distances_df = find_closest_points(distance_df)
     closest_distances_with_prices = closest_distances_df.merge(houses_lsoa, left_on = 'house_index', right_index = True )
-    return closest_distances_with_prices
+    closest_distances_with_prices_transport = closest_distances_with_prices.merge(transport_lsoa[['CreationDateTime', 'ATCOCode', 'StopType']], left_on = 'transport_index')
+    return closest_distances_with_prices_transport
 
 def find_transaction_lad_id_subset(conn, lad_id, lad_boundaries): 
     lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
