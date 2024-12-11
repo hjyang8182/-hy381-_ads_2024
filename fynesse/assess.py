@@ -483,12 +483,18 @@ def find_distance_to_closest_transport(connection, lad_id, transport_df, transpo
     cur = connection.cursor(pymysql.cursors.DictCursor)
     houses_lsoa = find_transaction_lad_id(connection, lad_id, lad_boundaries)
     houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
-    
     distance_df = compute_pairwise_distances(houses_lsoa, transport_lsoa)
     closest_distances_df = find_closest_points(distance_df)
     closest_distances_with_prices = closest_distances_df.merge(houses_lsoa, left_on = 'house_index', right_index = True )
     return closest_distances_with_prices
 
+def find_transaction_lad_id_subset(conn, lad_id, lad_boundaries): 
+    lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
+    lad_bbox = lad_row.bbox.values[0]
+    west, south, east, north = lad_bbox
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select * from prices_coordinates_oa_data where latitude between {south} and {north} and longitude between {west} and {east} and date_of_transfer >= 2020-01-01 ORDER BY RAND() LIMIT 50")
+    transaction_df = pd.DataFrame(cur.fetchall())
 def compute_pairwise_distances(house_gdf, transport_gdf):
     # Extract coordinates as numpy arrays
     coords1 = house_gdf.geometry.apply(lambda geom: (geom.x, geom.y)).to_list()
