@@ -527,6 +527,28 @@ def find_median_pct_inc_after_transport(conn, lad_id, transport_gdf, transport_t
             pct_incs.append(pct_inc)
             avg_dists.append(avg_dist)
     return pct_incs, avg_dists
+
+def find_yearly_pct_inc_after_transport(conn, lad_id, transport_gdf, transport_type, lad_boundaries):
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 50")
+    lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
+    transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
+    if transport_lad.empty: 
+        return
+    for lsoa_id in lsoa_ids:
+        distance_df = find_distance_to_closest_transport(conn, lsoa_id, transport_lad)
+        if distance_df is None: 
+            continue
+        distance_df_grouped = distance_df.groupby(['lsoa_id', 'transport_index'])
+        for idx, distance_df in distance_df_grouped: 
+            creation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
+            distance_df_after = distance_df[pd.to_datetime(distance_df['date_of_transfer']).dt.year >= creation_year]
+            distance_df_after['years_after_creation'] = pd.to_datetime(distance_df['date_of_transfer']).dt.year  - creation_year
+            
+            median_prices = distance_df_after.groupby('years_after_creation')['price'].median().reset_index()
+            median_prices['pct_change'] = median_prices['price'].pct_change()
+            median_prices = median_prices.dropna()
+    return median_prices['years_after_creation'].values, median_prices['pct_change'].values
             
 def compute_pairwise_distances(house_gdf, transport_gdf):
     # Extract coordinates as numpy arrays
