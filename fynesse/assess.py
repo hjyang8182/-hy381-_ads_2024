@@ -303,7 +303,9 @@ def find_transport_bbox(transport_gdf, lad_gdf, transport_type):
     elif transport_type == 'RAIL': 
         type_codes = ('RPLY', 'RLY')
     elif transport_type == 'AIR':
-        type_codes = ('AIR', 'GAT')
+        transport_gdf = gpd.sjoin(transport_gdf, lad_gdf, predicate = 'within')
+        transport_gdf = transport_gdf.drop(columns = 'index_right')
+        return transport_gdf
     else: 
        pass
     # Transport node data seems to be missing a lot of values
