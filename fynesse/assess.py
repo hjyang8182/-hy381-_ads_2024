@@ -500,13 +500,13 @@ def find_distance_to_closest_transport(connection, lsoa_id, transport_lad):
     closest_distances_with_prices_transport = closest_distances_with_prices.merge(transport_lad[['CreationDateTime', 'ATCOCode', 'StopType']], left_on = 'transport_index', right_index = True)
     return closest_distances_with_prices_transport
 
-def find_median_pct_inc_after_transport(conn, lad_id, transport_gdf, lad_boundaries):
+def find_median_pct_inc_after_transport(conn, lad_id, transport_gdf, transport_type, lad_boundaries):
     pct_incs = []
     avg_dists = []
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 50")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
-    transport_lad = find_transport_lad_id(transport_gdf, lad_id, lad_boundaries)
+    transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
     for lsoa_id in lsoa_ids:
         distance_df = find_distance_to_closest_transport(conn, lsoa_id, transport_lad)
         distance_df_grouped = distance_df.groupby(['lsoa_id', 'transport_index'])
