@@ -473,8 +473,8 @@ def plot_avg_lsoa_prices_in_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, t
         transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, transport_type)
         fig, ax = plt.subplots()
         lad_gdf.plot(ax = ax, facecolor = 'white', edgecolor = 'dimgray')
-        lsoa_avg_merged_gdf['avg(price)'] = np.log(lsoa_avg_merged_gdf['avg(price)'].astype(float))
-        lsoa_avg_merged_gdf.plot(ax = ax, column = 'avg(price)', cmap = 'viridis', legend=True)
+        lsoa_avg_merged_gdf['avg_price'] = np.log(lsoa_avg_merged_gdf['avg_price'].astype(float))
+        lsoa_avg_merged_gdf.plot(ax = ax, column = 'avg_price', cmap = 'viridis', legend=True)
         transport_gdf.plot(ax = ax, color = 'red')
     
 def find_dist_house_corr_lsoa(connection, lsoa_id, transport_lsoa, house_lsoa):
