@@ -623,16 +623,15 @@ def find_median_pct_inc_after_transport_vs_house_type(conn, lad_id, transport_gd
         distance_df_grouped = distance_df.groupby(['lsoa_id', 'transport_index'])
         cur = conn.cursor(pymysql.cursors.DictCursor)
         cur.execute(f"select * from car_availability_data where lsoa_id = '{lsoa_id}'")
-        car_availability = cur.fetchall()[0]['no_car_proportion']
         for idx, distance_df in distance_df_grouped: 
             creation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
-            median_before = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) < creation_year]['price'].values)
-            median_after = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) >= creation_year]['price'].values)
             median_before = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) < creation_year]['price'].values)
             median_after = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) >= creation_year]['price'].values)
             pct_inc = (median_after - median_before)/median_before * 100
             property_type_counts = distance_df['property_type'].value_counts().to_dict()
             new_build_counts = distance_df['new_build_flag'].value_counts().to_dict()
+            print(property_type_counts)
+            print(new_build_counts)
             merged_counts = property_type_counts | new_build_counts
             merged_counts['pct_change'] = pct_inc
             combined_df.append(merged_counts)
