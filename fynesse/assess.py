@@ -456,7 +456,7 @@ def plot_lad_prices_random_subset(conn, lad_ids, building_dfs, lad_boundaries, t
 
                 transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, transport_type)
                 house_transactions = find_transaction_bbox_after_2020(conn, lad_bbox)
-                osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions, lad_bbox)
+                osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
 
                 try: 
                     osm_prices_merged = gpd.sjoin(osm_prices_merged, lad_gdf, predicate = 'within')
