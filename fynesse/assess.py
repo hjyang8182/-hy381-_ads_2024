@@ -325,6 +325,8 @@ def find_transport_bbox_sql(conn, bbox, transport_type):
     west, south, east, north = bbox
     cur.execute(f"select * from transport_node_data where longitude between {west} and {east} and latitude between {south} and {north} and stop_type = '{transport_type}'")
     query_results = pd.DataFrame(cur.fetchall())
+    if query_results.empty: 
+        return query_results
     transport_gdf = gpd.GeoDataFrame(query_results, geometry = gpd.points_from_xy(query_results['longitude'], query_results['latitude']))
     return transport_gdf
 
