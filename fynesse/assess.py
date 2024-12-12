@@ -404,7 +404,7 @@ def find_joined_osm_transaction_data_lsoa(conn, lsoa_id, building_dfs):
         return
     joined_data = join_osm_transaction_data(buildings_gdf, transactions_lsoa)
     if joined_data.empty: 
-        return transactions_lsoa
+        return gpd.GeoDataFrame(transactions_lsoa, geometry = gpd.points_from_xy(transactions_lsoa['longitude'], transactions_lsoa['latitude']))
     return joined_data
 
 def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, transport_type):
