@@ -892,7 +892,7 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs,
     transport_lsoa = find_transport_lsoa_sql(connection, lsoa_id, transport_type)
     transport_nodes_coords = list(map(lambda n: (n['longitude'], n['latitude']), transport_lsoa))
     transport_gdf = gpd.GeoDataFrame(   
-        geometry=gpd.points_from_xy(*zip(*transport_nodes_coords)),
+        geometry=gpd.points_from_xy(transport_lsoa['longitude'], transport_lsoa['latitude']),
         crs=houses_lsoa.crs
     )
     fig = px.scatter_mapbox(
