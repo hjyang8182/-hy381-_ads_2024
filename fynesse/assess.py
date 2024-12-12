@@ -674,6 +674,7 @@ def find_all_features_modified(conn, lad_id, transport_gdf, transport_type, lad_
     cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT {num_lsoas}")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
     transport_lad = find_transport_lad_id_sql(conn, lad_id, lad_boundaries, transport_type)
+    transport_lad = gpd.GeoDataFrame(transport_lad, geometry = gpd.points_from_xy(transport_lad['longitude'], transport_lad['latitude']))
     if transport_lad.empty: 
         return
     pct_incs = []
