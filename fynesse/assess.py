@@ -806,6 +806,8 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs,
     lsoa_bbox = lsoa_row.bbox.values[0]
 
     houses_lsoa = find_joined_osm_transaction_data_lsoa(connection, lsoa_bbox, building_dfs)
+    if houses_lsoa.empty: 
+        return
     houses_lsoa['area_m2'] = houses_lsoa.geometry.area
     houses_lsoa['log_price'] = np.log(houses_lsoa['price'].values)
     houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
