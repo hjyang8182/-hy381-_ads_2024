@@ -907,7 +907,6 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs,
         opacity=0.7
     )
 
-    # Add transport nodes as a separate layer
     fig.add_scattermapbox(
         lat=transport_gdf.geometry.y,
         lon=transport_gdf.geometry.x,
@@ -916,7 +915,9 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs,
         name="Transport Nodes"
     )
 
-    fig.show()
+    # fig.show()
+    fig.show(renderer='browser')
+
 
 def find_median_house_price_change_over_time(conn, lad_id):
     median_house_price = []
