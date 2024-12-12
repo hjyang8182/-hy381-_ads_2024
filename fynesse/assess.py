@@ -529,7 +529,7 @@ def find_median_pct_inc_after_transport_vs_dist(conn, lad_id, transport_type, la
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT {num_lsoas}")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
-    transport_lad = find_transport_lad_id_sql(conn, lad_id, transport_type)
+    transport_lad = find_transport_lad_id_sql(conn, lad_id, lad_boundaries, transport_type)
     if transport_lad.empty: 
         return
     for lsoa_id in lsoa_ids:
