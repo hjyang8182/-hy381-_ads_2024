@@ -520,7 +520,7 @@ def find_distance_to_closest_transport(connection, lsoa_id, transport_lad):
     closest_distances_df = find_closest_points(distance_df)
     closest_distances_with_prices = closest_distances_df.merge(houses_lsoa, left_on = 'house_index', right_index = True)
     transport_lad = transport_lad.reset_index(drop = True)
-    closest_distances_with_prices_transport = closest_distances_with_prices.merge(transport_lad[['CreationDateTime', 'ATCOCode', 'StopType']], left_on = 'transport_index', right_index = True)
+    closest_distances_with_prices_transport = closest_distances_with_prices.merge(transport_lad[['creation_date', 'atco_code', 'stop_type']], left_on = 'transport_index', right_index = True)
     return closest_distances_with_prices_transport
 
 def find_median_pct_inc_after_transport_vs_dist(conn, lad_id, transport_gdf, transport_type, lad_boundaries, num_lsoas):
