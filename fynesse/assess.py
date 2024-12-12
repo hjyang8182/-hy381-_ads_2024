@@ -243,7 +243,7 @@ def find_student_poi_count(poi_df, oa_poi_df, tag):
 
 
 # TASK 2: TRANSPORT FACILITY EFFECT ON HOUSE PRICES
-def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFrame): 
+def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFrame, bbox): 
     """
         Given the transaction data on houses and a gdf consisting of OSMs labelled with tag 
         building = residential, join the two together based on address and whether or not the longitude, latitude coordinate
@@ -256,11 +256,16 @@ def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFram
         returns: 
         - full_merged: gdf consisting of joined OSM POI and transaction data, with log_10 house price values
     """
+    bbox_polygon = box(*bbox)
+
+    osm_gdf = osm_gdf[osm_gdf.geometry.within(bbox_polygon)]
+
     transaction_df['street'] = transaction_df['street'].str.lower()
     transaction_df['primary_addressable_object_name'] = transaction_df['primary_addressable_object_name'].str.lower()
 
     addr_columns = ["addr:housenumber","addr:street"]
     
+
     building_addr = osm_df[osm_df[addr_columns].notna().all(axis = 1)]
     building_addr['addr:street'] = building_addr['addr:street'].str.lower()
     building_addr['addr:housenumber'] = building_addr['addr:housenumber'].str.lower()
@@ -271,7 +276,7 @@ def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFram
     transactions_not_merged = transaction_df[~transaction_df.index.isin(merged_on_addr.index)]
     transactions_not_merged = gpd.GeoDataFrame(transactions_not_merged, geometry = gpd.points_from_xy(transactions_not_merged['longitude'], transactions_not_merged['latitude']))
     transactions_not_merged = transactions_not_merged.set_crs('epsg:4326')
-    merged_on_coord = gpd.sjoin(transactions_not_merged, osm_df, predicate = 'within')
+    merged_on_coord = gpd.sjoin_nearest(transactions_not_merged, osm_df)
     merged_on_coord = merged_on_coord.drop(columns = 'index_right')
 
     cols = ['price', 'date_of_transfer', 'postcode', 'property_type', 'new_build_flag', 'tenure_type', 'primary_addressable_object_name', 'secondary_addressable_object_name', 'street', 'latitude', 'longitude', 'db_id', 'geometry']
@@ -337,7 +342,7 @@ def find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
     lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
     return find_transport_bbox(transport_gdf, lad_gdf, transport_type)
 
-def find_transport_lad_id_sql(conn, lad_id, transport_type): 
+def find_transport_lad_id_sql(conn, lad_id, lad_boundaries, transport_type): 
     lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
     lad_bbox = lad_row.bbox.values[0]
     return find_transport_bbox_sql(conn, lad_bbox, transport_type)
@@ -451,7 +456,7 @@ def plot_lad_prices_random_subset(conn, lad_ids, building_dfs, lad_boundaries, t
 
                 transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, transport_type)
                 house_transactions = find_transaction_bbox_after_2020(conn, lad_bbox)
-                osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
+                osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions, lad_bbox)
 
                 try: 
                     osm_prices_merged = gpd.sjoin(osm_prices_merged, lad_gdf, predicate = 'within')
