@@ -630,10 +630,9 @@ def find_median_pct_inc_after_transport_vs_house_type(conn, lad_id, transport_gd
             pct_inc = (median_after - median_before)/median_before * 100
             property_type_counts = distance_df['property_type'].value_counts().to_dict()
             new_build_counts = distance_df['new_build_flag'].value_counts().to_dict()
-            print(property_type_counts)
-            print(new_build_counts)
             merged_counts = property_type_counts | new_build_counts
             merged_counts['pct_change'] = pct_inc
+            print(merged_counts)
             combined_df.append(merged_counts)
     house_type_df = pd.DataFrame(combined_df)
     house_type_df = house_type_df.fillna(0)
