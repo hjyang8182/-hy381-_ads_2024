@@ -879,8 +879,6 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs,
     lsoa_name = lsoa_row.LSOA21NM.values[0]
     lsoa_geom = lsoa_row.geometry.values[0]
     lsoa_bbox = lsoa_row.bbox.values[0]
-    with warnings.catch_warnings():
-            warnings.filterwarnings('ignore')
     houses_lsoa = find_joined_osm_transaction_data_lsoa(connection, lsoa_id, building_dfs)
     if houses_lsoa is None: 
         return

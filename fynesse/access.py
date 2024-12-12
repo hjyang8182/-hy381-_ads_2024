@@ -262,3 +262,24 @@ def insert_transport_data(conn, merged_transport_gdf):
     """
     cur.execute(query)
     conn.commit()
+  
+def insert_airport_data(conn, aeroways_merged):
+    aeroways_merged['StopType'] = 'AIR'
+    aeroways_merged['longitude'], aeroways_merged['latitude'] = zip(*aeroways_merged.apply(get_center_coordinates, axis=1))
+    aeroways_merged['ATCOCode'] = [f'AIR_{i}' for i in range(len(aeroways_merged))]
+    aeroways_merged_gdf_sql = aeroways_merged[['ATCOCode', 'longitude', 'latitude', 'StopType', 'LSOA21CD']]
+    aeroways_merged_gdf_sql.to_csv('./merged_gdf.csv', index = False)
+    # print(railway_station_merged_sql.head())
+    import pymysql
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    query = """
+    LOAD DATA LOCAL INFILE './merged_gdf.csv'
+    INTO TABLE transport_node_data
+    FIELDS TERMINATED BY ','
+    ENCLOSED BY '"'
+    LINES TERMINATED BY '\n'
+    IGNORE 1 LINES
+    (atco_code, longitude, latitude, stop_type, creation_date, lsoa_id);
+    """
+    cur.execute(query)
+    conn.commit()
