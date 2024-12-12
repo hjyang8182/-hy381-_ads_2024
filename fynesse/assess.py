@@ -327,7 +327,7 @@ def find_transport_bbox(transport_gdf, lad_gdf, transport_type):
 def find_transport_bbox_sql(conn, bbox, transport_type): 
     cur = conn.cursor(pymysql.cursors.DictCursor)
     west, south, east, north = bbox
-    cur.execute(f"select * from transport_node_data where longitude between {west} and {east} and latitude between {south} and {north} and stop_type = '{transport_type}")
+    cur.execute(f"select * from transport_node_data where longitude between {west} and {east} and latitude between {south} and {north} and stop_type = '{transport_type}'")
     transport_gdf = gpd.GeoDataFrame(cur.fetchall())
     return transport_gdf
 
