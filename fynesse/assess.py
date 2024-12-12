@@ -771,7 +771,7 @@ def find_all_features_with_house_types(conn, lad_id, transport_type, lad_boundar
                 property_type_counts = distance_df['property_type'].value_counts().to_dict()
                 new_build_counts = distance_df['new_build_flag'].value_counts().to_dict()
                 merged_counts = property_type_counts | new_build_counts
-                merged_counts['pct_change'] = pct_inc
+                combined_df = pd.DataFrame(columns = ['D', 'S', 'T', 'F', 'O', 'Y', 'N', 'pct_change'])
                 combined_df = pd.concat([combined_df, pd.DataFrame([merged_counts]).fillna(0)], ignore_index=True)
                 combined_df[['D', 'S', 'T', 'F', 'O']] = combined_df[['D', 'S', 'T', 'F', 'O']].div(combined_df[['D', 'S', 'T', 'F', 'O']].sum())
                 combined_df[['Y', 'N']] = combined_df[['Y','N']].div(combined_df[['Y','N']].sum())
