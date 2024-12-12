@@ -189,7 +189,20 @@ def k_fold_cross_validation_predict_students(k, dataset, feature_cols):
         performances.append((train_performance,test_performance))
     return performances, model_coefs
 
+def plot_regularized_model_performance(all_features, label_col, feature_cols):
+    linear_k_fold_results_regularized_l1 =k_fold_cross_validation_regularized(10, all_features, label_col, feature_cols, 0.1, 0)
+    linear_k_fold_perf_regularized_l1 = linear_k_fold_results_regularized_l1[0]
+    linear_k_fold_coefs_regularized_l1 = linear_k_fold_results_regularized_l1[1]
 
+    train_perf_l1 = np.array(list(map(lambda x : x[0], linear_k_fold_perf_regularized_l1)))
+    test_perf_l1 = np.array(list(map(lambda x: x[1], linear_k_fold_perf_regularized_l1)))
+    k_vals = np.arange(100)
+    plt.scatter(k_vals, train_perf_l1, color = 'blue')
+    plt.scatter(k_vals, test_perf_l1, color = 'red')
+    plt.xlabel('K value')
+    plt.ylabel('Root Mean Sqared Error')
+    print(f"Train RMSE average: {np.mean(train_perf_l1)}")
+    print(f"Test RMSE average: {np.mean(test_perf_l1)}" )
 def fit_linear_model_regularized(label_col, feature_cols, all_poi_data_df, alpha=0.0002, l1_wt=1.0): 
     all_features = all_poi_data_df[feature_cols].values.astype(float)
     population = all_poi_data_df[label_col].values.astype(float)
@@ -205,7 +218,7 @@ def fit_final_model(conn, lad_ids, transport_type, lad_boundaries, num_lsoas):
         warnings.filterwarnings('ignore')
         for lad_id in lad_ids: 
             # conn, lad_id, transport_type, lad_boundaries, num_lsoas = 5
-            feature_df = find_all_features_with_house_types(conn, lad_id, transport_type, lad_boundaries, 20)
+            feature_df = find_all_features_with_house_types(conn, lad_id, transport_type, lad_boundaries, num_lsoas)
             all_feature_dfs.append(feature_df) 
         all_features = pd.concat(all_feature_dfs)
         all_features = all_features.dropna()   

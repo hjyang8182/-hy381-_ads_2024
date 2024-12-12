@@ -20,6 +20,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 import warnings
 from matplotlib.patches import Patch
+from shapely import wkt
 """These are the types of import we might expect in this file
 import pandas
 import bokeh
@@ -392,6 +393,22 @@ def find_residential_buildings(conn, lad_id, building_dfs):
     buildings_gdf = buildings_gdf.drop(columns = 'index_right')
     return buildings_gdf
 
+def find_residential_buildings_sql(conn, lad_id): 
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select unique lsoa_id from oa_translation_data where lad_id = '{lad_id}'")
+    lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
+    buildings = []
+    for lsoa_id in lsoa_ids: 
+        cur.execute(f"select `addr:street`, `addr:housenumber`, ST_AsText(geometry) as geom_wkt, oa_id, lsoa_id) from building_residential_data where lsoa_id = {lsoa_id}")
+        building_df = pd.DataFrame(cur.fetchall())
+        building_df['geometry'] = building_df['geom_wkt'].apply(wkt.loads)
+        building_gdf = pd.GeoDataFrame(building_df, geometry = 'geometry')
+        building_gdf.set_crs('epsg:4326', inplace = True)
+        buildings.append(building_gdf)
+    all_buildings_df = pd.concat(buildings)
+    all_buildings_gdf = gpd.GeoDataFrame(all_buildings_df, geometry = 'geometry')
+    return all_buildings_gdf
+
 def find_joined_osm_transaction_data_lsoa(conn, lsoa_id, building_dfs): 
     buildings = []
     for i in range(len(building_dfs)): 
@@ -409,7 +426,7 @@ def find_joined_osm_transaction_data_lsoa(conn, lsoa_id, building_dfs):
         return gpd.GeoDataFrame(transactions_lsoa, geometry = gpd.points_from_xy(transactions_lsoa['longitude'], transactions_lsoa['latitude']))
     return joined_data
 
-def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, transport_type):
+def plot_lad_prices(conn, lad_id, lad_boundaries, transport_gdf, transport_type):
     """
         transport type: 
             'BUS' :  bus stops, station entrances
@@ -419,7 +436,7 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, t
     """ 
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore')
-        buildings_gdf = find_residential_buildings(conn, lad_id, building_dfs)
+        buildings_gdf = find_residential_buildings_sql(conn, lad_id)
         lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
         lad_name = lad_row.LAD21NM.values[0]
         lad_bbox = lad_row.bbox.values[0]
@@ -441,14 +458,14 @@ def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, t
         plt.title(f"log Price of Houses in {lad_name}")
         plt.show()
 
-def plot_lad_prices_random_subset(conn, lad_ids, building_dfs, lad_boundaries, transport_gdf, transport_type):
+def plot_lad_prices_random_subset(conn, lad_ids, lad_boundaries, transport_gdf, transport_type):
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore')
         fig, ax = plt.subplots(3, 3, figsize=(12,12))
         for i in range(3):
             for j in range(3): 
                 lad_id = lad_ids[i * j]
-                buildings_gdf = find_residential_buildings(conn, lad_id, building_dfs)
+                buildings_gdf = find_residential_buildings_sql(conn, lad_id)
                 lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
                 lad_name = lad_row.LAD21NM.values[0]
                 lad_geom = lad_row.geometry.values[0]
