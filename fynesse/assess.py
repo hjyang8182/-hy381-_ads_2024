@@ -879,58 +879,58 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs,
     lsoa_name = lsoa_row.LSOA21NM.values[0]
     lsoa_geom = lsoa_row.geometry.values[0]
     lsoa_bbox = lsoa_row.bbox.values[0]
-        with warnings.catch_warnings():
-                warnings.filterwarnings('ignore')
-        houses_lsoa = find_joined_osm_transaction_data_lsoa(connection, lsoa_id, building_dfs)
-        if houses_lsoa is None: 
-            return
-        # houses_lsoa['area_m2'] = houses_lsoa.geometry.area
-        houses_lsoa['log_price'] = np.log(houses_lsoa['price'].values)
-        houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
+    with warnings.catch_warnings():
+            warnings.filterwarnings('ignore')
+    houses_lsoa = find_joined_osm_transaction_data_lsoa(connection, lsoa_id, building_dfs)
+    if houses_lsoa is None: 
+        return
+    # houses_lsoa['area_m2'] = houses_lsoa.geometry.area
+    houses_lsoa['log_price'] = np.log(houses_lsoa['price'].values)
+    houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
 
-        clusters = get_lsoa_house_clusters(houses_lsoa)
-        houses_lsoa['clusters'] = clusters
+    clusters = get_lsoa_house_clusters(houses_lsoa)
+    houses_lsoa['clusters'] = clusters
 
-        transport_lsoa = find_transport_lsoa_sql(connection, lsoa_id, transport_type)
-        if transport_lsoa.empty: 
-            return
-        transport_gdf = gpd.GeoDataFrame(   
-            geometry=gpd.points_from_xy(transport_lsoa['longitude'], transport_lsoa['latitude']),
-            crs=houses_lsoa.crs
-        )
-        fig, ax = plt.subplots()
-        price_min, price_max = houses_lsoa['log_price'].min(), houses_lsoa['log_price'].max()
-        size_factor = 100  # Adjust this to control the size scaling
-        scatter = ax.scatter(
-            houses_lsoa.geometry.x, 
-            houses_lsoa.geometry.y, 
-            c=houses_lsoa['clusters'], 
-            s=(houses_lsoa['log_price'] - price_min) / (price_max - price_min) * size_factor, 
-            cmap='tab20',  # Color map for clusters
-            alpha=0.7,     # Transparency of the dots
-            edgecolors='w', # White edge for better contrast
-            label='Houses'
-        )
+    transport_lsoa = find_transport_lsoa_sql(connection, lsoa_id, transport_type)
+    if transport_lsoa.empty: 
+        return
+    transport_gdf = gpd.GeoDataFrame(   
+        geometry=gpd.points_from_xy(transport_lsoa['longitude'], transport_lsoa['latitude']),
+        crs=houses_lsoa.crs
+    )
+    fig, ax = plt.subplots()
+    price_min, price_max = houses_lsoa['log_price'].min(), houses_lsoa['log_price'].max()
+    size_factor = 100  # Adjust this to control the size scaling
+    scatter = ax.scatter(
+        houses_lsoa.geometry.x, 
+        houses_lsoa.geometry.y, 
+        c=houses_lsoa['clusters'], 
+        s=(houses_lsoa['log_price'] - price_min) / (price_max - price_min) * size_factor, 
+        cmap='tab20',  # Color map for clusters
+        alpha=0.7,     # Transparency of the dots
+        edgecolors='w', # White edge for better contrast
+        label='Houses'
+    )
 
-        # Add a colorbar for the clusters
-        plt.colorbar(scatter, ax=ax, label='Cluster ID')
+    # Add a colorbar for the clusters
+    plt.colorbar(scatter, ax=ax, label='Cluster ID')
 
-        # Plot transport nodes
-        ax.scatter(
-            transport_gdf.geometry.x, 
-            transport_gdf.geometry.y, 
-            color='red', 
-            s=50,   
-            label='Transport Nodes'
-        )
+    # Plot transport nodes
+    ax.scatter(
+        transport_gdf.geometry.x, 
+        transport_gdf.geometry.y, 
+        color='red', 
+        s=50,   
+        label='Transport Nodes'
+    )
 
-        ax.set_title(f"Houses in {lsoa_name}: Clusters and Prices", fontsize=16)
-        ax.set_xlabel("Longitude", fontsize=12)
-        ax.set_ylabel("Latitude", fontsize=12)
+    ax.set_title(f"Houses in {lsoa_name}: Clusters and Prices", fontsize=16)
+    ax.set_xlabel("Longitude", fontsize=12)
+    ax.set_ylabel("Latitude", fontsize=12)
 
-        ax.legend()
+    ax.legend()
 
-        plt.show()
+    plt.show()
 
 
 def find_median_house_price_change_over_time(conn, lad_id):
