@@ -776,11 +776,11 @@ def plot_house_price_changes_lsoa(connection, lsoa_id, transport_df):
     same_houses = dict(sorted(same_houses.items(), key=lambda item: len(item[1]), reverse=True))
     keys = list(same_houses.keys())
     sample_size = min(len(keys), 6)
-    fig, axs = plt.subplots(2, 3, figsize=(7,7)) 
+    fig, axs = plt.subplots(3, 2, figsize=(9,9)) 
 
     for idx in range(min(len(keys), 6)):
         key = keys[idx]
-        i, j = divmod(idx, 3)
+        i, j = divmod(idx, 2)
         house = same_houses[key]
         house['date_of_transfer_datetime'] = pd.to_datetime(house['date_of_transfer'])
         house = house.sort_values(by = 'date_of_transfer_datetime')
