@@ -632,7 +632,7 @@ def find_all_features_modified(conn, lad_id, transport_gdf, transport_type, lad_
     transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
     if transport_lad.empty: 
         return
-    pct_change_vals = []
+    pct_incs = []
     transport_usage_vals = []
     car_availability_vals = []
     avg_dists =  []
@@ -661,7 +661,6 @@ def find_all_features_modified(conn, lad_id, transport_gdf, transport_type, lad_
                 car_availability_vals.append(car_availability)
                 avg_dists.append(avg_dist)
     features_df = pd.DataFrame({
-        'years_after_creation': years_after_creation_vals,
         'pct_inc': pct_incs,
         'transport_usage': transport_usage_vals, 
         'car_availability': car_availability_vals,
@@ -678,7 +677,7 @@ def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundarie
     transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
     if transport_lad.empty: 
         return
-     years_after_creation_vals = np.array([])
+    years_after_creation_vals = np.array([])
     pct_incs = np.array([])
     transport_usage_vals = np.array([])
     car_availability_vals = np.array([])
