@@ -872,7 +872,7 @@ def get_lsoa_house_clusters(houses_lsoa):
     clusters = sch.fcluster(linkage_matrix, t=y_threshold, criterion='distance')
     return clusters
 
-def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs, transport_df, y_threshold=20): 
+def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs, transport_type, y_threshold=20): 
     lsoa_row = lsoa_boundaries[lsoa_boundaries['LSOA21CD'] == lsoa_id]
     lsoa_name = lsoa_row.LSOA21NM.values[0]
     lsoa_geom = lsoa_row.geometry.values[0]
@@ -888,7 +888,7 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs,
     clusters = get_lsoa_house_clusters(houses_lsoa)
     houses_lsoa['clusters'] = clusters
 
-    transport_lsoa = find_transport_lsoa(connection, lsoa_id, transport_df, lsoa_boundaries)
+    transport_lsoa = find_transport_lsoa_sql(connection, lsoa_id, transport_type)
     transport_nodes_coords = list(map(lambda n: (n['longitude'], n['latitude']), transport_lsoa))
 
     fig, ax = plt.subplots(1, 2, figsize = (12,12))
