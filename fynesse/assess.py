@@ -806,6 +806,7 @@ def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundarie
     transport_lad = find_transport_lad_id_sql(conn, lad_id, transport_type)
     if transport_lad.empty: 
         return
+    transport_lad = gpd.GeoDataFrame(transport_lad, geometry = gpd.points_from_xy(transport_lad['longitude'], transport_lad['latitude']))
     years_after_creation_vals = np.array([])
     pct_change_vals = np.array([])
     transport_usage_vals = np.array([])
