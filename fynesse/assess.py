@@ -523,7 +523,7 @@ def find_distance_to_closest_transport(connection, lsoa_id, transport_lad):
     closest_distances_with_prices_transport = closest_distances_with_prices.merge(transport_lad[['creation_date', 'atco_code', 'stop_type']], left_on = 'transport_index', right_index = True)
     return closest_distances_with_prices_transport
 
-def find_median_pct_inc_after_transport_vs_dist(conn, lad_id, transport_gdf, transport_type, lad_boundaries, num_lsoas):
+def find_median_pct_inc_after_transport_vs_dist(conn, lad_id, transport_type, lad_boundaries, num_lsoas):
     pct_incs = []
     avg_dists = []
     cur = conn.cursor(pymysql.cursors.DictCursor)

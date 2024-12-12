@@ -195,24 +195,4 @@ def fit_linear_model_regularized(label_col, feature_cols, all_poi_data_df, alpha
     population = all_poi_data_df[label_col].values.astype(float)
 
     m_linear_all_feat = sm.OLS(population, all_features)
-    results_linear = m_linear_all_feat.fit_regularized(alpha=alpha, L1_wt = l1_wt)
-    return results_linear.params
-
-# TASK 2
-def fit_final_model(conn, lad_ids, transport_type, lad_boundaries, num_lsoas):
-    all_feature_dfs = []
-    with warnings.catch_warnings():
-        warnings.filterwarnings('ignore')
-        for lad_id in lad_ids: 
-            # conn, lad_id, transport_type, lad_boundaries, num_lsoas = 5
-            feature_df = find_all_features_with_house_types(conn, lad_id, transport_type, lad_boundaries, 20)
-            all_feature_dfs.append(feature_df) 
-        all_features = pd.concat(all_feature_dfs)
-        all_features = all_features.dropna()   
-        columns = ['transport_usage', 'car_availability', 'avg_dist', 'detached', 'semi_detached', 'terraced', 'flats', 'new_build']
-        label_col = 'pct_inc'
-        features = all_features[columns].values.astype(float)
-        labels = all_features[label_col].values.astype(float)
-        m_linear_all_feat_tube = sm.OLS(labels, features)
-        results_linear_tube = m_linear_all_feat_tube.fit()
-    return results_linear_tube
+    results_linear = m_linear_all_feat.fit_regularized(alpha=alpha, L1_wt = l1
