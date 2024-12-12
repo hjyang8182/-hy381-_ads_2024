@@ -898,7 +898,7 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs,
     )
     fig, ax = plt.subplots()
     price_min, price_max = houses_lsoa['log_price'].min(), houses_lsoa['log_price'].max()
-    size_factor = 10  # Adjust this to control the size scaling
+    size_factor = 100  # Adjust this to control the size scaling
     scatter = ax.scatter(
         houses_lsoa.geometry.x, 
         houses_lsoa.geometry.y, 
