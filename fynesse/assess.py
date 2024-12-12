@@ -678,7 +678,7 @@ def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundarie
     if transport_lad.empty: 
         return
     years_after_creation_vals = np.array([])
-    pct_incs = np.array([])
+    pct_change_vals = np.array([])
     transport_usage_vals = np.array([])
     car_availability_vals = np.array([])
     avg_dists =  np.array([])
@@ -697,6 +697,7 @@ def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundarie
             for idx, distance_df in distance_df_grouped: 
                 creation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
                 distance_df_after = distance_df[pd.to_datetime(distance_df['date_of_transfer']).dt.year >= creation_year]
+                distance_df_after['years_after_creation'] = pd.to_datetime(distance_df['date_of_transfer']).dt.year  - creation_year
                 avg_dist = np.mean(distance_df['distance'].values)
                 median_prices = distance_df_after.groupby('years_after_creation')['price'].median().reset_index()
                 median_prices['pct_change'] = median_prices['price'].pct_change()
