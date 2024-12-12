@@ -243,7 +243,7 @@ def find_student_poi_count(poi_df, oa_poi_df, tag):
 
 
 # TASK 2: TRANSPORT FACILITY EFFECT ON HOUSE PRICES
-def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFrame, bbox): 
+def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFrame): 
     """
         Given the transaction data on houses and a gdf consisting of OSMs labelled with tag 
         building = residential, join the two together based on address and whether or not the longitude, latitude coordinate
@@ -256,9 +256,6 @@ def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFram
         returns: 
         - full_merged: gdf consisting of joined OSM POI and transaction data, with log_10 house price values
     """
-    bbox_polygon = box(*bbox)
-
-    osm_gdf = osm_gdf[osm_gdf.geometry.within(bbox_polygon)]
 
     transaction_df['street'] = transaction_df['street'].str.lower()
     transaction_df['primary_addressable_object_name'] = transaction_df['primary_addressable_object_name'].str.lower()
