@@ -890,7 +890,7 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs,
     houses_lsoa['clusters'] = clusters
 
     transport_lsoa = find_transport_lsoa_sql(connection, lsoa_id, transport_type)
-    if transport_lsoa is None: 
+    if transport_lsoa.empty: 
         return
     transport_gdf = gpd.GeoDataFrame(   
         geometry=gpd.points_from_xy(transport_lsoa['longitude'], transport_lsoa['latitude']),
