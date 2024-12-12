@@ -400,11 +400,11 @@ def find_joined_osm_transaction_data_lsoa(conn, lsoa_id, building_dfs):
     buildings_gdf = buildings_gdf.drop_duplicates('index_right')
     buildings_gdf = buildings_gdf.drop(columns = 'index_right')
     transactions_lsoa = find_transaction_lsoa(conn, lsoa_id)
-    print(buildings_gdf)
-    print(transactions_lsoa)
     if transactions_lsoa.empty: 
         return
     joined_data = join_osm_transaction_data(buildings_gdf, transactions_lsoa)
+    if joined_data.empty: 
+        return transactions_lsoa
     return joined_data
 
 def plot_lad_prices(conn, lad_id, building_dfs, lad_boundaries, transport_gdf, transport_type):
@@ -883,7 +883,7 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs,
     houses_lsoa = find_joined_osm_transaction_data_lsoa(connection, lsoa_bbox, building_dfs)
     if houses_lsoa is None: 
         return
-    houses_lsoa['area_m2'] = houses_lsoa.geometry.area
+    # houses_lsoa['area_m2'] = houses_lsoa.geometry.area
     houses_lsoa['log_price'] = np.log(houses_lsoa['price'].values)
     houses_lsoa = gpd.GeoDataFrame(houses_lsoa, geometry = gpd.points_from_xy(houses_lsoa['longitude'], houses_lsoa['latitude']))
 
