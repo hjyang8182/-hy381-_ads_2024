@@ -629,6 +629,7 @@ def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundarie
     pct_change_vals = np.array([])
     transport_usage_vals = np.array([])
     car_availability_vals = np.array([])
+    avg_dists =  np.array([])
     for lsoa_id in lsoa_ids:
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore')
@@ -653,11 +654,13 @@ def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundarie
                 pct_change_vals = np.concatenate([pct_change_vals, median_prices['pct_change'].values])
                 transport_usage_vals = np.concatenate([transport_usage_vals, np.repeat(transport_usage, len(median_prices))])
                 car_availability_vals = np.concatenate([car_availability_vals, np.repeat(car_availability, len(median_prices))])
+                avg_dists = np.concatenate([avg_dists, np.repeat(avg_dist, len(median_prices))])
     features_df = pd.DataFrame({
         'years_after_creation': years_after_creation_vals,
         'pct_change': pct_change_vals,
         'transport_usage': transport_usage_vals, 
-        'car_availability': car_availability_vals
+        'car_availability': car_availability_vals,
+        'avg_dist': avg_dists
         })
     return features_df
 
