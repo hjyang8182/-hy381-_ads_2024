@@ -680,10 +680,10 @@ def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundarie
     if transport_lad.empty: 
         return
     # years_after_creation_vals = np.array([])
-    pct_change_vals = np.array([])
-    transport_usage_vals = np.array([])
-    car_availability_vals = np.array([])
-    avg_dists =  np.array([])
+    pct_change_vals = []
+    transport_usage_vals = []
+    car_availability_vals = []
+    avg_dists =  []
     for lsoa_id in lsoa_ids:
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore')
