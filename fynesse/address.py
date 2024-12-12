@@ -240,3 +240,11 @@ def fit_final_model(conn, lad_ids, transport_type, lad_boundaries, num_lsoas):
         m_linear_all_feat_tube = sm.OLS(labels, features)
         results_linear_tube = m_linear_all_feat_tube.fit()
     return features, labels, results_linear_tube
+
+def get_test_features(conn, lad_ids, transport_type, lad_boundaries, num_lsoas):
+    rail_test_features_dfs = []
+    for lad_id in lad_ids: 
+        feature_df = find_all_features_with_house_types(conn, lad_id, transport_type, lad_boundaries, num_lsoas)
+        rail_test_features_dfs.append(feature_df) 
+    rail_test_features_df = pd.concat(rail_test_features_dfs)
+    return rail_test_features_df
