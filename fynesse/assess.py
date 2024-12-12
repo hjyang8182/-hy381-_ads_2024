@@ -717,6 +717,85 @@ def find_all_features_modified(conn, lad_id, transport_gdf, transport_type, lad_
         })
     return features_df
 
+def find_all_features_with_house_types(conn, lad_id, transport_type, lad_boundaries, num_lsoas = 5):
+    feature_df = {}
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT {num_lsoas}")
+    lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
+    transport_lad = find_transport_lad_id_sql(conn, lad_id, lad_boundaries, transport_type)
+    if transport_lad.empty: 
+        return
+    transport_lad = gpd.GeoDataFrame(transport_lad, geometry = gpd.points_from_xy(transport_lad['longitude'], transport_lad['latitude']))
+    pct_incs = []
+    transport_usage_vals = []
+    car_availability_vals = []
+    avg_dists =  []
+
+    D_vals = []  # For 'D' column
+    S_vals = []  # For 'S' column
+    T_vals = []  # For 'T' column
+    F_vals = []  # For 'F' column
+    O_vals = []  # For 'O' column
+    Y_vals = []  # For 'Y' column
+    N_vals = []  # For 'N' column
+
+    for lsoa_id in lsoa_ids:
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore')
+            distance_df = find_distance_to_closest_transport(conn, lsoa_id, transport_lad)
+            if distance_df is None: 
+                continue
+            distance_df_grouped = distance_df.groupby(['lsoa_id', 'transport_index'])
+            cur = conn.cursor(pymysql.cursors.DictCursor)
+            cur.execute(f"select mt.*, ca.* from method_of_travel_data as mt join car_availability_data as ca on ca.lsoa_id = mt.lsoa_id where ca.lsoa_id = '{lsoa_id}'")
+            census_results  = cur.fetchall()[0]
+            transport_usage = census_results[transport_type]
+            car_availability = census_results['no_car_proportion']
+            for idx, distance_df in distance_df_grouped: 
+                creation_year = pd.to_datetime(distance_df['creation_date']).dt.year
+                distance_df_after = distance_df[pd.to_datetime(distance_df['date_of_transfer']).dt.year >= creation_year]
+                distance_df_after['years_after_creation'] = pd.to_datetime(distance_df['date_of_transfer']).dt.year  - creation_year
+                avg_dist = np.mean(distance_df['distance'].values)
+                median_before = np.median(
+                    distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year < creation_year) & distance_df['price'].notna()]['price'].values
+                )
+                median_after = np.median(
+                    distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year >= creation_year) & distance_df['price'].notna()]['price'].values
+                )
+                pct_inc = (median_after - median_before)/median_before * 100
+                pct_incs.append(pct_inc)
+                transport_usage_vals.append(transport_usage)
+                car_availability_vals.append(car_availability)
+                avg_dists.append(avg_dist)
+                
+                property_type_counts = distance_df['property_type'].value_counts().to_dict()
+                new_build_counts = distance_df['new_build_flag'].value_counts().to_dict()
+                merged_counts = property_type_counts | new_build_counts
+                merged_counts['pct_change'] = pct_inc
+                combined_df = pd.concat([combined_df, pd.DataFrame([merged_counts]).fillna(0)], ignore_index=True)
+                combined_df[['D', 'S', 'T', 'F', 'O']] = combined_df[['D', 'S', 'T', 'F', 'O']].div(combined_df[['D', 'S', 'T', 'F', 'O']].sum())
+                combined_df[['Y', 'N']] = combined_df[['Y','N']].div(combined_df[['Y','N']].sum())
+                combined_df = combined_df.fillna(0)
+                row = combined_df.iloc[0]
+                D_vals.append(row['D'])  
+                S_vals.append(row['S'])  
+                T_vals.append(row['T']) 
+                F_vals.append(row['F'])  
+                Y_vals.append(row['Y']) 
+                N_vals.append(row['N'])  
+    features_df = pd.DataFrame({
+        'pct_inc': pct_incs,
+        'transport_usage': transport_usage_vals, 
+        'car_availability': car_availability_vals,
+        'avg_dist': avg_dists, 
+        'D_vals': D_vals, 
+        'S_vals': S_vals, 
+        'T_vals': T_vals, 
+        'F_vals': F_vals, 
+        'Y_vals': Y_vals, 
+        'N_vals': N_vals
+        })
+    return features_df
 
 def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundaries, num_lsoas = 5):
     feature_df = {}
