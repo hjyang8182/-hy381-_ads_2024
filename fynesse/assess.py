@@ -628,6 +628,8 @@ def find_median_pct_inc_after_transport_vs_house_type(conn, lad_id, transport_gd
             median_before = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) < creation_year]['price'].values)
             median_after = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) >= creation_year]['price'].values)
             pct_inc = (median_after - median_before)/median_before * 100
+            print(median_before)
+            print(median_after)
             property_type_counts = distance_df['property_type'].value_counts().to_dict()
             new_build_counts = distance_df['new_build_flag'].value_counts().to_dict()
             merged_counts = property_type_counts | new_build_counts
