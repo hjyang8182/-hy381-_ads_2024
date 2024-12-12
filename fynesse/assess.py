@@ -503,11 +503,11 @@ def find_distance_to_closest_transport(connection, lsoa_id, transport_lad):
     closest_distances_with_prices_transport = closest_distances_with_prices.merge(transport_lad[['CreationDateTime', 'ATCOCode', 'StopType']], left_on = 'transport_index', right_index = True)
     return closest_distances_with_prices_transport
 
-def find_median_pct_inc_after_transport_vs_dist(conn, lad_id, transport_gdf, transport_type, lad_boundaries):
+def find_median_pct_inc_after_transport_vs_dist(conn, lad_id, transport_gdf, transport_type, lad_boundaries, num_lsoas):
     pct_incs = []
     avg_dists = []
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 5")
+    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT {num_lsoas}")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
     transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
     if transport_lad.empty: 
@@ -529,11 +529,11 @@ def find_median_pct_inc_after_transport_vs_dist(conn, lad_id, transport_gdf, tra
             avg_dists.append(avg_dist)
     return pct_incs, avg_dists
 
-def find_median_pct_inc_after_transport_vs_car_ava(conn, lad_id, transport_gdf, transport_type, lad_boundaries):
+def find_median_pct_inc_after_transport_vs_car_ava(conn, lad_id, transport_gdf, transport_type, lad_boundaries, num_lsoas = 5):
     pct_incs = []
     no_car_proportions = []
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 5")
+    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT num_lsoas")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
     transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
     if transport_lad.empty: 
@@ -558,11 +558,11 @@ def find_median_pct_inc_after_transport_vs_car_ava(conn, lad_id, transport_gdf, 
             pct_incs.append(pct_inc)
     return pct_incs, no_car_proportions
 
-def find_median_pct_inc_after_transport_vs_travel_method(conn, lad_id, transport_gdf, transport_type, lad_boundaries):
+def find_median_pct_inc_after_transport_vs_travel_method(conn, lad_id, transport_gdf, transport_type, lad_boundaries, num_lsoas = 5):
     pct_incs = []
     transport_usages = []
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 5")
+    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT {num_lsoas}")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
     transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
     if transport_lad.empty: 
@@ -587,9 +587,9 @@ def find_median_pct_inc_after_transport_vs_travel_method(conn, lad_id, transport
             pct_incs.append(pct_inc)
     return pct_incs, transport_usages
 
-def find_yearly_pct_inc_after_transport(conn, lad_id, transport_gdf, transport_type, lad_boundaries):
+def find_yearly_pct_inc_after_transport(conn, lad_id, transport_gdf, transport_type, lad_boundaries, num_lsoas = 5):
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 5")
+    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT {num_lsoas}")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
     transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
     if transport_lad.empty: 
@@ -615,10 +615,10 @@ def find_yearly_pct_inc_after_transport(conn, lad_id, transport_gdf, transport_t
                 pct_change_vals = np.concatenate([pct_change_vals, median_prices['pct_change'].values])
     return years_after_creation_vals, pct_change_vals     
 
-def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundaries):
+def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundaries, num_lsoas = 5):
     feature_df = {}
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT 5")
+    cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT {num_lsoas}")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
     transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
     if transport_lad.empty: 
