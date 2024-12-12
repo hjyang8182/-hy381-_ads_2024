@@ -31,25 +31,6 @@ import sklearn.feature_extraction"""
 
 """Place commands in this file to assess the data you have downloaded. How are missing values encoded, how are outliers encoded? What do columns represent, makes rure they are correctly labeled. How is the data indexed. Crete visualisation routines to assess the data (e.g. in bokeh). Ensure that date formats are correct and correctly timezoned."""
 
-
-def data():
-    """Load the data from access and ensure missing values are correctly encoded as well as indices correct, column names informative, date and times correctly formatted. Return a structured data structure such as a data frame."""
-    df = access.data()
-    raise NotImplementedError
-
-def query(data):
-    """Request user input for some aspect of the data."""
-    raise NotImplementedError
-
-def view(data):
-    """Provide a view of the data that allows the user to verify some aspect of its quality."""
-    raise NotImplementedError
-
-def labelled(data):
-    """Provide a labelled set of data ready for supervised learning."""
-    raise NotImplementedError
-
-
 def find_poi_area(latitude, longitude, box_width, box_height, tags): 
     '''
     Finds the sum of the areas of POIs near a given pair of coordinates within a bounding box. 
@@ -326,21 +307,31 @@ def find_transport_bbox(transport_gdf, lad_gdf, transport_type):
     return transport_gdf
 
 def find_transport_bbox_sql(conn, bbox, transport_type): 
+    """
+    Given a bounding box, find transport facilities within the box
+
+    params: 
+    - conn: pyysql connection
+    - bbox: bounding box coordinates of region intereseted in 
+    - transport_type: classification of transport stops 
+        - 'BUS': any transport stops related to buses
+        - 'SUB': any transport stops related to underground tube station 
+        - 'RAIL': any transport stops related to overground tube stations
+        - 'AIR': any transport stops related to airports, aeroways
+    returns: 
+    - transport_gdf: gdf consisting of queried transport OSM data 
+    """
     cur = conn.cursor(pymysql.cursors.DictCursor)
     west, south, east, north = bbox
     cur.execute(f"select * from transport_node_data where longitude between {west} and {east} and latitude between {south} and {north} and stop_type = '{transport_type}'")
-    transport_gdf = gpd.GeoDataFrame(cur.fetchall())
+    query_results = pd.DataFrame(cur.fetchall())
+    transport_gdf = gpd.GeoDataFrame(query_results, geometry = gpd.points_from_xy(query_results['longitude'], query_results['latitude']))
     return transport_gdf
 
 def find_transaction_lad_id(conn, lad_id, lad_boundaries): 
     lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
     lad_bbox = lad_row.bbox.values[0]
     return find_transaction_bbox_after_2020(conn, lad_bbox)
-
-def find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries): 
-    lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
-    lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
-    return find_transport_bbox(transport_gdf, lad_gdf, transport_type)
 
 def find_transport_lad_id_sql(conn, lad_id, lad_boundaries, transport_type): 
     lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
@@ -442,7 +433,7 @@ def plot_lad_prices(conn, lad_id, lad_boundaries, transport_gdf, transport_type)
         lad_bbox = lad_row.bbox.values[0]
         lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
 
-        transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, transport_type)
+        transport_gdf = find_transport_bbox_sql(conn, lad_bbox, transport_type)
         house_transactions = find_transaction_bbox_after_2020(conn, lad_bbox)
         osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
 
@@ -472,7 +463,7 @@ def plot_lad_prices_random_subset(conn, lad_ids, lad_boundaries, transport_gdf, 
                 lad_bbox = lad_row.bbox.values[0]
                 lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
 
-                transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, transport_type)
+                transport_gdf = find_transport_bbox_sql(conn, lad_bbox, transport_type)
                 house_transactions = find_transaction_bbox_after_2020(conn, lad_bbox)
                 osm_prices_merged = join_osm_transaction_data(buildings_gdf, house_transactions)
 
@@ -515,9 +506,10 @@ def plot_avg_lsoa_prices_in_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, t
         lsoa_avg_merged_gdf = gpd.GeoDataFrame(lsoa_avg_merged, geometry = 'geometry')
         lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
         lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
+        lad_bbox = lad_row.bbox.values[0]
 
         lsoa_avg_merged_gdf = gpd.sjoin(lsoa_avg_merged_gdf, lad_gdf, predicate = 'within')
-        transport_gdf = find_transport_bbox(transport_gdf, lad_gdf, transport_type)
+        transport_gdf = find_transport_bbox_sql(conn, lad_bbox, transport_type)
         fig, ax = plt.subplots()
         lad_gdf.plot(ax = ax, facecolor = 'white', edgecolor = 'dimgray')
         lsoa_avg_merged_gdf['avg_price'] = np.log(lsoa_avg_merged_gdf['avg_price'].astype(float))

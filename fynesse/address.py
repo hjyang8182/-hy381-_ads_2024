@@ -110,10 +110,21 @@ def find_oa(connection, latitude, longitude):
     oa_id = oa_query['oa_id']
     return oa_id
 
-def find_all_oa_features(conn, oa_id): 
+def find_all_oa_student_features(conn, oa_id): 
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    query = """
-    select poi_count.*, ns.L15 from oa_poi_count_data as poi_count inner join ns_sec_boundary_data as ns on poi_count.oa_id = ns.oa_id
+    query = f"""
+    select poi_count.*, ns.L15 from oa_poi_count_data as poi_count inner join ns_sec_boundary_data as ns on poi_count.oa_id = ns.oa_id where poi_count.oa_id = '{oa_id}'
+    """
+    cur.execute(query)
+    all_poi_data = cur.fetchall()
+    all_poi_data_df = pd.DataFrame(all_poi_data)
+    all_poi_data_df.set_index('oa_id')
+    return all_poi_data_df
+
+def find_all_oa_toddler_features(conn, oa_id):
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    query = f"""
+    select * from toddler_data where oa_id = '{oa_id}'
     """
     cur.execute(query)
     all_poi_data = cur.fetchall()
@@ -128,66 +139,66 @@ def measure_performance(y_pred, y):
     rmse = np.sqrt(np.mean((y-y_pred)**2))
     return rmse
 
-def k_fold_cross_validation_predict_students_regularized(k, dataset, feature_cols, alpha, l1_wt):
-    performances = []
-    model_coefs = []
-    k_folds = split_dataset(k, dataset)
-    for i in range(k): 
-        # Prepare test data
-        test_data = k_folds[i]
-        test_indices = test_data.index.values
-        test_features = test_data.loc[test_indices][feature_cols].values
-        test_labels = test_data.loc[test_indices]['L15'].values
+# def k_fold_cross_validation_predict_students_regularized(k, dataset, feature_cols, alpha, l1_wt):
+#     performances = []
+#     model_coefs = []
+#     k_folds = split_dataset(k, dataset)
+#     for i in range(k): 
+#         # Prepare test data
+#         test_data = k_folds[i]
+#         test_indices = test_data.index.values
+#         test_features = test_data.loc[test_indices][feature_cols].values
+#         test_labels = test_data.loc[test_indices]['L15'].values
         
-        # Train on traindata 
-        train_data = pd.DataFrame(pd.concat([k_folds[j] for j in range(k) if j != i]))
-        train_indices = train_data.index.values
-        train_features = train_data.loc[train_indices][feature_cols].values
-        train_labels = train_data.loc[train_indices]['L15'].values
+#         # Train on traindata 
+#         train_data = pd.DataFrame(pd.concat([k_folds[j] for j in range(k) if j != i]))
+#         train_indices = train_data.index.values
+#         train_features = train_data.loc[train_indices][feature_cols].values
+#         train_labels = train_data.loc[train_indices]['L15'].values
     
-        m_linear = sm.OLS(train_labels, train_features)
-        results_linear = m_linear.fit_regularized(alpha = alpha, L1_wt = l1_wt)
-        # if coefficients are largely different, overfitting 
-        model_coefs.append(results_linear.params)
+#         m_linear = sm.OLS(train_labels, train_features)
+#         results_linear = m_linear.fit_regularized(alpha = alpha, L1_wt = l1_wt)
+#         # if coefficients are largely different, overfitting 
+#         model_coefs.append(results_linear.params)
 
-        train_pred = results_linear.predict(train_features)
-        train_performance = measure_performance(train_pred, train_labels)
-        # Test on test data
-        test_pred = results_linear.predict(test_features)
-        test_performance = measure_performance(test_pred, test_labels)
-        performances.append((train_performance,test_performance))
-    return performances, model_coefs
+#         train_pred = results_linear.predict(train_features)
+#         train_performance = measure_performance(train_pred, train_labels)
+#         # Test on test data
+#         test_pred = results_linear.predict(test_features)
+#         test_performance = measure_performance(test_pred, test_labels)
+#         performances.append((train_performance,test_performance))
+#     return performances, model_coefs
 
 
-def k_fold_cross_validation_predict_students(k, dataset, feature_cols):
-    performances = []
-    model_coefs = []
-    k_folds = split_dataset(k, dataset)
-    for i in range(k): 
-        # Prepare test data
-        test_data = k_folds[i]
-        test_indices = test_data.index.values
-        test_features = test_data.loc[test_indices][feature_cols].values
-        test_labels = test_data.loc[test_indices]['L15'].values
+# def k_fold_cross_validation_predict_students(k, dataset, feature_cols):
+#     performances = []
+#     model_coefs = []
+#     k_folds = split_dataset(k, dataset)
+#     for i in range(k): 
+#         # Prepare test data
+#         test_data = k_folds[i]
+#         test_indices = test_data.index.values
+#         test_features = test_data.loc[test_indices][feature_cols].values
+#         test_labels = test_data.loc[test_indices]['L15'].values
         
-        # Train on traindata 
-        train_data = pd.DataFrame(pd.concat([k_folds[j] for j in range(k) if j != i]))
-        train_indices = train_data.index.values
-        train_features = train_data.loc[train_indices][feature_cols].values
-        train_labels = train_data.loc[train_indices]['L15'].values
+#         # Train on traindata 
+#         train_data = pd.DataFrame(pd.concat([k_folds[j] for j in range(k) if j != i]))
+#         train_indices = train_data.index.values
+#         train_features = train_data.loc[train_indices][feature_cols].values
+#         train_labels = train_data.loc[train_indices]['L15'].values
     
-        m_linear = sm.OLS(train_labels, train_features)
-        results_linear = m_linear.fit()
-        # if coefficients are largely different, overfitting 
-        model_coefs.append(results_linear.params)
+#         m_linear = sm.OLS(train_labels, train_features)
+#         results_linear = m_linear.fit()
+#         # if coefficients are largely different, overfitting 
+#         model_coefs.append(results_linear.params)
 
-        train_pred = results_linear.get_prediction(train_features).summary_frame()
-        train_performance = measure_performance(train_pred['mean'], train_labels)
-        # Test on test data
-        test_pred = results_linear.get_prediction(test_features).summary_frame()
-        test_performance = measure_performance(test_pred['mean'], test_labels)
-        performances.append((train_performance,test_performance))
-    return performances, model_coefs
+#         train_pred = results_linear.get_prediction(train_features).summary_frame()
+#         train_performance = measure_performance(train_pred['mean'], train_labels)
+#         # Test on test data
+#         test_pred = results_linear.get_prediction(test_features).summary_frame()
+#         test_performance = measure_performance(test_pred['mean'], test_labels)
+#         performances.append((train_performance,test_performance))
+#     return performances, model_coefs
 
 def plot_regularized_model_performance(all_features, label_col, feature_cols):
     linear_k_fold_results_regularized_l1 =k_fold_cross_validation_regularized(10, all_features, label_col, feature_cols, 0.1, 0)
@@ -228,4 +239,4 @@ def fit_final_model(conn, lad_ids, transport_type, lad_boundaries, num_lsoas):
         labels = all_features[label_col].values.astype(float)
         m_linear_all_feat_tube = sm.OLS(labels, features)
         results_linear_tube = m_linear_all_feat_tube.fit()
-    return results_linear_tube
+    return features, labels, results_linear_tube
