@@ -470,7 +470,7 @@ def find_avg_lsoa_price_in_lad(conn, lad_id, lad_boundaries):
     cur = conn.cursor(pymysql.cursors.DictCursor)
     west, south, east, north = lad_bbox
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select lsoa_id, avg(price) as avg_price from prices_coordinates_oa_data where date_of_transfer >= '2020-01-01' group by lsoa_id")
+    cur.execute(f"select lsoa_id, avg(price) as avg_price from prices_coordinates_oa_data where date_of_transfer >= '2020-01-01' and latitude BETWEEN {south} and {north} and longitude BETWEEN {west} and {east}  group by lsoa_id")
     avg_lsoas_col = cur.fetchall()
     return avg_lsoas_col 
 
