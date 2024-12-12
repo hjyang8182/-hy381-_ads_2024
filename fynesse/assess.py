@@ -896,27 +896,42 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs,
         geometry=gpd.points_from_xy(transport_lsoa['longitude'], transport_lsoa['latitude']),
         crs=houses_lsoa.crs
     )
-    fig = px.scatter_mapbox(
-        houses_lsoa, 
-        lat=houses_lsoa.geometry.y, 
-        lon=houses_lsoa.geometry.x,
-        color=houses_lsoa['clusters'].astype(str), 
-        size=houses_lsoa['log_price'],             
-        title=f"Houses in {lsoa_name}: Clusters and Prices",
-        mapbox_style="carto-positron",
-        opacity=0.7
+    fig, ax = plt.subplots()
+    price_min, price_max = houses_lsoa['log_price'].min(), houses_lsoa['log_price'].max()
+    size_factor = 10  # Adjust this to control the size scaling
+    scatter = ax.scatter(
+        houses_lsoa.geometry.x, 
+        houses_lsoa.geometry.y, 
+        c=houses_lsoa['clusters'], 
+        s=(houses_lsoa['log_price'] - price_min) / (price_max - price_min) * size_factor, 
+        cmap='tab20',  # Color map for clusters
+        alpha=0.7,     # Transparency of the dots
+        edgecolors='w', # White edge for better contrast
+        label='Houses'
     )
 
-    fig.add_scattermapbox(
-        lat=transport_gdf.geometry.y,
-        lon=transport_gdf.geometry.x,
-        mode='markers',
-        marker=dict(size=10, color='red'),
-        name="Transport Nodes"
+    # Add a colorbar for the clusters
+    plt.colorbar(scatter, ax=ax, label='Cluster ID')
+
+    # Plot transport nodes
+    ax.scatter(
+        transport_gdf.geometry.x, 
+        transport_gdf.geometry.y, 
+        color='red', 
+        s=50,    # Fixed size for transport nodes
+        label='Transport Nodes'
     )
 
-    # fig.show()
-    fig.show(renderer='browser')
+    # Add titles and labels
+    ax.set_title(f"Houses in {lsoa_name}: Clusters and Prices", fontsize=16)
+    ax.set_xlabel("Longitude", fontsize=12)
+    ax.set_ylabel("Latitude", fontsize=12)
+
+    # Show the legend
+    ax.legend()
+
+    plt.show()
+    # fig.show(renderer='browser')
 
 
 def find_median_house_price_change_over_time(conn, lad_id):
