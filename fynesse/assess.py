@@ -403,6 +403,8 @@ def find_joined_osm_transaction_data_lsoa(conn, lsoa_id, building_dfs):
     buildings_gdf = buildings_gdf.drop_duplicates('index_right')
     buildings_gdf = buildings_gdf.drop(columns = 'index_right')
     transactions_lsoa = find_transaction_lsoa(conn, lsoa_id)
+    print(buildings_gdf)
+    print(transactions_lsoa)
     if transactions_lsoa.empty: 
         return
     joined_data = join_osm_transaction_data(buildings_gdf, transactions_lsoa)
