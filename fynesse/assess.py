@@ -788,12 +788,11 @@ def find_all_features_with_house_types(conn, lad_id, transport_type, lad_boundar
         'transport_usage': transport_usage_vals, 
         'car_availability': car_availability_vals,
         'avg_dist': avg_dists, 
-        'D_vals': D_vals, 
-        'S_vals': S_vals, 
-        'T_vals': T_vals, 
-        'F_vals': F_vals, 
-        'Y_vals': Y_vals, 
-        'N_vals': N_vals
+        'detached': D_vals, 
+        'semi_detached': S_vals, 
+        'terraced': T_vals, 
+        'flats': F_vals, 
+        'new_build': Y_vals, 
         })
     return features_df
 
