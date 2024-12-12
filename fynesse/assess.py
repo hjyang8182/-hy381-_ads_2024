@@ -923,24 +923,24 @@ def plot_house_price_changes_lsoa(connection, lsoa_id, transport_df):
     plt.tight_layout()
     plt.show()
 
-def plot_house_price_changes_lad(connection, lad_id, transport_df, transport_type, lad_boundaries):
+def plot_house_price_changes_lad(connection, lad_id, transport_type, lad_boundaries):
     cur = connection.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"select unique lsoa_id from oa_translation_data where lad_id = '{lad_id}'")
-    transport_lad = find_transport_lad_id(transport_df, transport_type, lad_id, lad_boundaries)
+    transport_lad = find_transport_lad_id_sql(connection, lad_id, lad_boundaries, transport_type)
     lsoas = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
     lsoas_sample = np.random.choice(lsoas, 5, replace = False)
     for lsoa_id in lsoas_sample: 
         plot_house_price_changes_lsoa(connection, lsoa_id, transport_lad)
 
 
-def plot_distance_to_transport_price_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, transport_df, transport_type):
+def plot_distance_to_transport_price_lad(conn, lad_id, lad_boundaries, lsoa_boundaries, transport_type):
     distances = []
     lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
     lad_name = lad_row.LAD21NM.values[0]
 
     avg_col_house_prices = find_avg_lsoa_price_in_lad(conn, lad_id, lad_boundaries)
     avg_col_house_prices_df = pd.DataFrame(avg_col_house_prices)
-    transport_nodes = find_transport_lad_id(transport_df, transport_type, lad_id, lad_boundaries)
+    transport_nodes = find_transport_lad_id_sql(conn, lad_id, lad_boundaries, transport_type)
     lsoas_in_lad = avg_col_house_prices_df.lsoa_id.values
     distances = []
     for lsoa_id in lsoas_in_lad: 
@@ -1065,7 +1065,7 @@ def find_median_house_price_change_over_time(conn, lad_id):
     median_house_price_df['pct_change'] = median_house_price_df['median_price'].pct_change() * 100 
     return median_house_price_df
 
-def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_gdf, transport_type, lad_boundaries):
+def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_type, lad_boundaries):
     median_house_price_df = find_median_house_price_change_over_time(conn, lad_id)
     grouped_by_lsoa = median_house_price_df.groupby('lsoa_id')
     cur = conn.cursor(pymysql.cursors.DictCursor)
@@ -1080,7 +1080,7 @@ def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_gdf, transp
         plt.xlabel("Year")
         plt.ylabel("Median Price of Houses in LSOA")
         plt.title(f"Median House Price of LSOAs in {lad_name}")
-    transport_df = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
+    transport_df = find_transport_lad_id_sql(conn, lad_id, lad_boundaries, transport_type)
     creation_years = transport_df.CreationDateTime.dt.year.values
     for year in creation_years: 
         if year >= 2000:
