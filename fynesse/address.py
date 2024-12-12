@@ -207,12 +207,12 @@ def fit_final_model(conn, lad_ids, transport_type, lad_boundaries, num_lsoas):
             # conn, lad_id, transport_type, lad_boundaries, num_lsoas = 5
             feature_df = find_all_features_with_house_types(conn, lad_id, transport_type, lad_boundaries, 20)
             all_feature_dfs.append(feature_df) 
-            all_features = pd.concat(all_feature_dfs)
-            all_features = all_features.dropna()   
-            columns = ['transport_usage', 'car_availability', 'avg_dist', 'detached', 'semi_detached', 'terraced', 'flats', 'new_build']
-            label_col = 'pct_inc'
-            features = all_features[columns].values.astype(float)
-            labels = all_features[label_col].values.astype(float)
-            m_linear_all_feat_tube = sm.OLS(labels, features)
-            results_linear_tube = m_linear_all_feat_tube.fit()
+        all_features = pd.concat(all_feature_dfs)
+        all_features = all_features.dropna()   
+        columns = ['transport_usage', 'car_availability', 'avg_dist', 'detached', 'semi_detached', 'terraced', 'flats', 'new_build']
+        label_col = 'pct_inc'
+        features = all_features[columns].values.astype(float)
+        labels = all_features[label_col].values.astype(float)
+        m_linear_all_feat_tube = sm.OLS(labels, features)
+        results_linear_tube = m_linear_all_feat_tube.fit()
     return results_linear_tube
