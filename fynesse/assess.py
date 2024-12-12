@@ -754,7 +754,7 @@ def find_transport_lsoa(lsoa_id, transport_df, transport_type, lsoa_boundaries):
 
 def find_transport_lsoa_sql(conn, lsoa_id, transport_type): 
     cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select * from transport_node_data where lsoa_id = '{lsoa_id}' and stop_type = '{transport_type}")
+    cur.execute(f"select * from transport_node_data where lsoa_id = '{lsoa_id}' and stop_type = '{transport_type}'")
     lsoa_transport = cur.fetchall()
     return pd.DataFrame(lsoa_transport)
 
