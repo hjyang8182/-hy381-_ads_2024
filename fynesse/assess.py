@@ -274,6 +274,7 @@ def join_osm_transaction_data(osm_df : pd.DataFrame, transaction_df: pd.DataFram
     transactions_not_merged = transaction_df[~transaction_df.index.isin(merged_on_addr.index)]
     transactions_not_merged = gpd.GeoDataFrame(transactions_not_merged, geometry = gpd.points_from_xy(transactions_not_merged['longitude'], transactions_not_merged['latitude']))
     transactions_not_merged = transactions_not_merged.set_crs('epsg:4326')
+    osm_df = osm_df.set_crs('epsg:4326')
     merged_on_coord = gpd.sjoin_nearest(transactions_not_merged, osm_df)
     merged_on_coord = merged_on_coord.drop(columns = 'index_right')
 
