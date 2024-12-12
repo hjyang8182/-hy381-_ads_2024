@@ -239,7 +239,7 @@ def fit_final_model(conn, lad_ids, transport_type, lad_boundaries, num_lsoas):
         labels = all_features[label_col].values.astype(float)
         m_linear_all_feat_tube = sm.OLS(labels, features)
         results_linear_tube = m_linear_all_feat_tube.fit()
-    return features, labels, results_linear_tube
+    return all_features, results_linear_tube
 
 def get_test_features(conn, lad_ids, transport_type, lad_boundaries, num_lsoas):
     rail_test_features_dfs = []
