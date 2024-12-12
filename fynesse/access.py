@@ -175,4 +175,111 @@ def create_bbox_polygon(row, distance_km):
     south = latitude - box_width/2
     east = longitude + box_height/2
     west = longitude - box_height/2
-    return Polygon([(west, south), (east, south), (east, north), (west, nort
+    return Polygon([(west, south), (east, south), (east, north), (west, north)])
+
+
+def insert_data(connection, table_name, columns, data):
+    """
+    Inserts list of tuple of row values into any table.
+   
+    Args:
+        connection:  connection object.
+        table_name: name of the table
+        columns: column names to insert into
+        data: list of tuples containing the values
+
+    """
+    # Build the query dynamically
+    columns_str = ", ".join(columns)
+    placeholders = ", ".join(["%s"] * len(columns))
+
+    query = f"""
+    INSERT INTO {table_name} ({columns_str}) 
+    VALUES ({placeholders})
+    """
+
+    with connection.cursor() as cursor:
+        cursor.executemany(query, data)
+    connection.commit()
+    connection.close()
+
+def merge_osm_with_naptan_and_oa(osm_df, naptan_df, lsoa_boundaries):
+    osm_df = osm_df[osm_df['naptan:AtcoCode'].notna()]
+    osm_df = osm_df.merge(naptan_df[['ATCOCode', 'StopType', 'CreationDateTime']], left_on = 'naptan:AtcoCode', right_on = 'ATCOCode')
+    osm_df_merged = gpd.sjoin(osm_df, lsoa_boundaries.to_crs(crs = 'epsg:4326')[['LSOA21CD', 'geometry']], predicate = 'within')
+    return osm_df_merged
+
+def get_center_coordinates(row):
+    """
+    Extracts longitude and latitude based on geometry type.
+
+    Args:
+        row: A row of the GeoDataFrame.
+
+    Returns:
+        A tuple containing longitude and latitude.
+    """
+    geometry = row['geometry']
+    if geometry.type == 'Polygon' or geometry.type == 'MultiPolygon':
+        return geometry.centroid.x, geometry.centroid.y
+    elif geometry.type == 'Point':
+        return geometry.x, geometry.y
+    elif geometry.type == 'LineString':
+        return geometry.coords[0][0], geometry.coords[0][1]  # Use the first point of the LineString
+    else:
+        raise Exception
+
+def insert_transport_data(conn, merged_transport_gdf):
+    """
+    Inserts OSM transport gdfs merged with the NAPTAN, LSOA boundary dataset into transport_node_data table.
+
+    Args:
+        row: A row of the GeoDataFrame.
+
+    Returns:
+        None
+    
+    """
+    merged_transport_gdf = merged_transport_gdf.drop(columns = 'index_right')
+    merged_transport_gdf['longitude'], merged_transport_gdf['latitude'] = zip(*merged_transport_gdf.apply(get_center_coordinates, axis=1))
+    merged_transport_gdf['StopType'] = merged_transport_gdf['StopType'].replace(['PLT', 'MET', 'TMU'], 'SUB')
+    merged_transport_gdf['StopType'] = merged_transport_gdf['StopType'].replace(['BCT', 'BCS', 'BCQ', 'BST', 'BCE', 'BCP'], 'BUS')
+    merged_transport_gdf['StopType'] = merged_transport_gdf['StopType'].replace(['RPLY', 'RLY'], 'RAIL')
+
+    merged_transport_gdf_sql = merged_transport_gdf[['ATCOCode', 'longitude', 'latitude', 'StopType', 'CreationDateTime', 'LSOA21CD']]
+    merged_transport_gdf_sql.to_csv('./merged_gdf.csv', index = False)
+    # print(railway_station_merged_sql.head())
+    import pymysql
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    query = """
+    LOAD DATA LOCAL INFILE './merged_gdf.csv'
+    INTO TABLE transport_node_data
+    FIELDS TERMINATED BY ','
+    ENCLOSED BY '"'
+    LINES TERMINATED BY '\n'
+    IGNORE 1 LINES
+    (atco_code, longitude, latitude, stop_type, creation_date, lsoa_id);
+    """
+    cur.execute(query)
+    conn.commit()
+  
+def insert_airport_data(conn, aeroways_merged):
+    aeroways_merged['StopType'] = 'AIR'
+    aeroways_merged['longitude'], aeroways_merged['latitude'] = zip(*aeroways_merged.apply(get_center_coordinates, axis=1))
+    aeroways_merged['ATCOCode'] = [f'AIR_{i}' for i in range(len(aeroways_merged))]
+    aeroways_merged_gdf_sql = aeroways_merged[['ATCOCode', 'longitude', 'latitude', 'StopType', 'LSOA21CD']]
+    aeroways_merged_gdf_sql.to_csv('./merged_gdf.csv', index = False)
+    # print(railway_station_merged_sql.head())
+    import pymysql
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    query = """
+    LOAD DATA LOCAL INFILE './merged_gdf.csv'
+    INTO TABLE transport_node_data
+    FIELDS TERMINATED BY ','
+    ENCLOSED BY '"'
+    LINES TERMINATED BY '\n'
+    IGNORE 1 LINES
+    (atco_code, longitude, latitude, stop_type, lsoa_id);
+    """
+    cur.execute(query)
+    conn.commit()
