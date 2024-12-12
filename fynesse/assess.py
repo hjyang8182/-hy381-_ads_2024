@@ -880,7 +880,7 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs,
     lsoa_geom = lsoa_row.geometry.values[0]
     lsoa_bbox = lsoa_row.bbox.values[0]
 
-    houses_lsoa = find_joined_osm_transaction_data_lsoa(connection, lsoa_bbox, building_dfs)
+    houses_lsoa = find_joined_osm_transaction_data_lsoa(connection, lsoa_id, building_dfs)
     if houses_lsoa is None: 
         return
     # houses_lsoa['area_m2'] = houses_lsoa.geometry.area
