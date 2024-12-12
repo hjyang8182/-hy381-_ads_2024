@@ -608,7 +608,7 @@ def find_median_pct_inc_after_transport_vs_travel_method(conn, lad_id, transport
     return pct_incs, transport_usages
 
 def find_median_pct_inc_after_transport_vs_house_type(conn, lad_id, transport_gdf, transport_type, lad_boundaries, num_lsoas = 5):
-    combined_df = []
+    combined_df = pd.DataFrame(columns = ['D', 'S', 'T', 'F', 'O', 'Y', 'N'])
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT {num_lsoas}")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
@@ -634,13 +634,11 @@ def find_median_pct_inc_after_transport_vs_house_type(conn, lad_id, transport_gd
             new_build_counts = distance_df['new_build_flag'].value_counts().to_dict()
             merged_counts = property_type_counts | new_build_counts
             merged_counts['pct_change'] = pct_inc
-            combined_df.append(merged_counts)
-    house_type_df = pd.DataFrame(combined_df)
-    house_type_df = house_type_df.fillna(0)
-    house_type_df[['D', 'S', 'T', 'F', 'O']] = house_type_df[['D', 'S', 'T', 'F', 'O']].div(house_type_df[['D', 'S', 'T', 'F', 'O']].sum())
-    house_type_df[['Y', 'N']] = house_type_df[['Y','N']].div(house_type_df[['D', 'S', 'T', 'F', 'O']].sum())
+            combined_df.append(merged_counts, ignore_index = True)
+    combined_df[['D', 'S', 'T', 'F', 'O']] = combined_df[['D', 'S', 'T', 'F', 'O']].div(house_type_df[['D', 'S', 'T', 'F', 'O']].sum())
+    combined_df[['Y', 'N']] = combined_df[['Y','N']].div(combined_df[['D', 'S', 'T', 'F', 'O']].sum())
     
-    return house_type_df
+    return combined_df
 
 def find_yearly_pct_inc_after_transport(conn, lad_id, transport_gdf, transport_type, lad_boundaries, num_lsoas = 5):
     cur = conn.cursor(pymysql.cursors.DictCursor)
