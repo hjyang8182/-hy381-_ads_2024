@@ -636,7 +636,8 @@ def find_median_pct_inc_after_transport_vs_house_type(conn, lad_id, transport_gd
             merged_counts = property_type_counts | new_build_counts
             merged_counts['pct_change'] = pct_inc
             combined_df.append(merged_counts)
-
+    house_type_df = pd.concat(combined_df)
+    house_type_df = house_type_df.fillna(0)
     return combined_df
 
 def find_yearly_pct_inc_after_transport(conn, lad_id, transport_gdf, transport_type, lad_boundaries, num_lsoas = 5):
