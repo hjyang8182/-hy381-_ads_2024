@@ -632,11 +632,10 @@ def find_all_features_modified(conn, lad_id, transport_gdf, transport_type, lad_
     transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
     if transport_lad.empty: 
         return
-    years_after_creation_vals = np.array([])
-    pct_incs = np.array([])
-    transport_usage_vals = np.array([])
-    car_availability_vals = np.array([])
-    avg_dists =  np.array([])
+    pct_change_vals = []
+    transport_usage_vals = []
+    car_availability_vals = []
+    avg_dists =  []
     for lsoa_id in lsoa_ids:
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore')
@@ -679,11 +678,11 @@ def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundarie
     transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
     if transport_lad.empty: 
         return
-    # years_after_creation_vals = np.array([])
-    pct_change_vals = []
-    transport_usage_vals = []
-    car_availability_vals = []
-    avg_dists =  []
+     years_after_creation_vals = np.array([])
+    pct_incs = np.array([])
+    transport_usage_vals = np.array([])
+    car_availability_vals = np.array([])
+    avg_dists =  np.array([])
     for lsoa_id in lsoa_ids:
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore')
