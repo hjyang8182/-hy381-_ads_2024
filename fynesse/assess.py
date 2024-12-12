@@ -320,6 +320,13 @@ def find_transport_bbox(transport_gdf, lad_gdf, transport_type):
     transport_gdf = gpd.GeoDataFrame(transport_gdf)
     return transport_gdf
 
+def find_transport_bbox_sql(conn, bbox, transport_type): 
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    west, south, east, north = bbox
+    cur.execute(f"select * from transport_node_data where longitude between {west} and {east} and latitude between {south} and {north} and stop_type = '{transport_type}")
+    transport_gdf = gpd.GeoDataFrame(cur.fetchall())
+    return transport_gdf
+
 def find_transaction_lad_id(conn, lad_id, lad_boundaries): 
     lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
     lad_bbox = lad_row.bbox.values[0]
@@ -687,6 +694,12 @@ def find_transport_lsoa(lsoa_id, transport_df, transport_type, lsoa_boundaries):
     lad_row = lsoa_boundaries[lsoa_boundaries['LSOA21CD'] == lsoa_id]
     lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
     return find_transport_bbox(transport_df, lad_gdf, transport_type)
+
+def find_transport_lsoa_sql(conn, lsoa_id, transport_type): 
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select * from transport_node_data where lsoa_id = '{lsoa_id}' and stop_type = '{transport_type}")
+    lsoa_transport = cur.fetchall()
+    return pd.DataFrame(lsoa_transport)
 
 def find_transaction_lsoa(connection, lsoa_id):
     cur = connection.cursor(pymysql.cursors.DictCursor)
