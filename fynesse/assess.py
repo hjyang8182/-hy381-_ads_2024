@@ -624,7 +624,7 @@ def find_yearly_pct_inc_after_transport(conn, lad_id, transport_gdf, transport_t
                 pct_change_vals = np.concatenate([pct_change_vals, median_prices['pct_change'].values])
     return years_after_creation_vals, pct_change_vals     
 
-def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundaries, num_lsoas = 5):
+def find_all_features_modified(conn, lad_id, transport_gdf, transport_type, lad_boundaries, num_lsoas = 5):
     feature_df = {}
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT {num_lsoas}")
@@ -632,10 +632,11 @@ def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundarie
     transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
     if transport_lad.empty: 
         return
-    transport_usage_vals = []
-    car_availability_vals = []
-    avg_dists = []
-    pct_incs = []
+    years_after_creation_vals = np.array([])
+    pct_incs = np.array([])
+    transport_usage_vals = np.array([])
+    car_availability_vals = np.array([])
+    avg_dists =  np.array([])
     for lsoa_id in lsoa_ids:
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore')
@@ -650,19 +651,19 @@ def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundarie
             car_availability = census_results['no_car_proportion']
             for idx, distance_df in distance_df_grouped: 
                 creation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
+                distance_df_after = distance_df[pd.to_datetime(distance_df['date_of_transfer']).dt.year >= creation_year]
+                distance_df_after['years_after_creation'] = pd.to_datetime(distance_df['date_of_transfer']).dt.year  - creation_year
+                avg_dist = np.mean(distance_df['distance'].values)
                 median_before = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) < creation_year]['price'].values)
                 median_after = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) >= creation_year]['price'].values)
                 pct_inc = (median_after - median_before)/median_before * 100
-
-                avg_dist = np.mean(distance_df['distance'].values)
-
+                pct_incs.append(pct_inc)
                 transport_usage_vals.append(transport_usage)
                 car_availability_vals.append(car_availability)
                 avg_dists.append(avg_dist)
-                pct_incs.append(pct_inc)
-
     features_df = pd.DataFrame({
-        'pct_incs': pct_incs,
+        'years_after_creation': years_after_creation_vals,
+        'pct_inc': pct_incs,
         'transport_usage': transport_usage_vals, 
         'car_availability': car_availability_vals,
         'avg_dist': avg_dists
@@ -670,7 +671,7 @@ def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundarie
     return features_df
 
 
-def find_all_features_mmodified(conn, lad_id, transport_gdf, transport_type, lad_boundaries, num_lsoas = 5):
+def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundaries, num_lsoas = 5):
     feature_df = {}
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT {num_lsoas}")
@@ -678,7 +679,7 @@ def find_all_features_mmodified(conn, lad_id, transport_gdf, transport_type, lad
     transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
     if transport_lad.empty: 
         return
-    years_after_creation_vals = np.array([])
+    # years_after_creation_vals = np.array([])
     pct_change_vals = np.array([])
     transport_usage_vals = np.array([])
     car_availability_vals = np.array([])
@@ -696,18 +697,13 @@ def find_all_features_mmodified(conn, lad_id, transport_gdf, transport_type, lad
             transport_usage = census_results[transport_type]
             car_availability = census_results['no_car_proportion']
             for idx, distance_df in distance_df_grouped: 
-                
-                
                 creation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
                 distance_df_after = distance_df[pd.to_datetime(distance_df['date_of_transfer']).dt.year >= creation_year]
-                distance_df_after['years_after_creation'] = pd.to_datetime(distance_df['date_of_transfer']).dt.year  - creation_year
                 avg_dist = np.mean(distance_df['distance'].values)
-                reation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
-                median_before = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) < creation_year]['price'].values)
-                median_after = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) >= creation_year]['price'].values)
-                median_before = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) < creation_year]['price'].values)
-                median_after = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) >= creation_year]['price'].values)
-                pct_inc = (median_after - median_before)/median_before * 100
+                median_prices = distance_df_after.groupby('years_after_creation')['price'].median().reset_index()
+                median_prices['pct_change'] = median_prices['price'].pct_change()
+                median_prices = median_prices.dropna()
+                years_after_creation_vals = np.concatenate([years_after_creation_vals, median_prices['years_after_creation'].values])
                 pct_change_vals = np.concatenate([pct_change_vals, median_prices['pct_change'].values])
                 transport_usage_vals = np.concatenate([transport_usage_vals, np.repeat(transport_usage, len(median_prices))])
                 car_availability_vals = np.concatenate([car_availability_vals, np.repeat(car_availability, len(median_prices))])
