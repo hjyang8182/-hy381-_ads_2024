@@ -653,8 +653,8 @@ def find_all_features_modified(conn, lad_id, transport_gdf, transport_type, lad_
                 distance_df_after = distance_df[pd.to_datetime(distance_df['date_of_transfer']).dt.year >= creation_year]
                 distance_df_after['years_after_creation'] = pd.to_datetime(distance_df['date_of_transfer']).dt.year  - creation_year
                 avg_dist = np.mean(distance_df['distance'].values)
-                median_before = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) < creation_year]['price'].values)
-                median_after = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) >= creation_year]['price'].values)
+                median_before = distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year < creation_year) & distance_df['price'].notna()]['price'].values
+                median_after = distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year >= creation_year) & distance_df['price'].notna()]['price'].values
                 pct_inc = (median_after - median_before)/median_before * 100
                 pct_incs.append(pct_inc)
                 transport_usage_vals.append(transport_usage)
