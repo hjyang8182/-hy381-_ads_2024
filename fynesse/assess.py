@@ -694,7 +694,7 @@ def find_all_features_modified(conn, lad_id, transport_gdf, transport_type, lad_
             transport_usage = census_results[transport_type]
             car_availability = census_results['no_car_proportion']
             for idx, distance_df in distance_df_grouped: 
-                creation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
+                creation_year = pd.to_datetime(distance_df['creation_date']).dt.year
                 distance_df_after = distance_df[pd.to_datetime(distance_df['date_of_transfer']).dt.year >= creation_year]
                 distance_df_after['years_after_creation'] = pd.to_datetime(distance_df['date_of_transfer']).dt.year  - creation_year
                 avg_dist = np.mean(distance_df['distance'].values)
