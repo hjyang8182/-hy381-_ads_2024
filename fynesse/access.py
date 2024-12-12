@@ -279,7 +279,7 @@ def insert_airport_data(conn, aeroways_merged):
     ENCLOSED BY '"'
     LINES TERMINATED BY '\n'
     IGNORE 1 LINES
-    (atco_code, longitude, latitude, stop_type, creation_date, lsoa_id);
+    (atco_code, longitude, latitude, stop_type, lsoa_id);
     """
     cur.execute(query)
     conn.commit()
