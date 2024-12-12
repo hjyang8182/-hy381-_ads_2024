@@ -852,11 +852,9 @@ def plot_distance_to_transport_price_lad(conn, lad_id, lad_boundaries, lsoa_boun
 def get_lsoa_house_clusters(houses_lsoa): 
     property_types = ['D', 'S', 'T', 'F', 'O']
     property_labels = {'D': 0, 'S': 1, 'T': 2, 'F': 3, 'O': 4}
-    houses_oa = houses_lsoa[houses_lsoa['area_m2'].notna()]
-    areas = houses_oa['area_m2'].values
-    new_builds = np.where(houses_oa['new_build_flag'] == 'N', 1, 0)
-    property_types = [property_labels[property_type] for property_type in houses_oa['property_type'].values]
-    features = np.column_stack((property_types, new_builds, areas))
+    new_builds = np.where(houses_lsoa['new_build_flag'] == 'N', 1, 0)
+    property_types = [property_labels[property_type] for property_type in houses_lsoa['property_type'].values]
+    features = np.column_stack((property_types, new_builds))
     import scipy.cluster.hierarchy as sch
     from sklearn.cluster import AgglomerativeClustering
 
