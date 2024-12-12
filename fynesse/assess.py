@@ -532,6 +532,7 @@ def find_median_pct_inc_after_transport_vs_dist(conn, lad_id, transport_type, la
     transport_lad = find_transport_lad_id_sql(conn, lad_id, lad_boundaries, transport_type)
     if transport_lad.empty: 
         return
+    transport_lad = gpd.GeoDataFrame(transport_lad, geometry = gpd.points_from_xy(transport_lad['longitude'], transport_lad['latitude']))
     for lsoa_id in lsoa_ids:
         distance_df = find_distance_to_closest_transport(conn, lsoa_id, transport_lad)
         if distance_df is None: 
