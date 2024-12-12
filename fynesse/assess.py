@@ -539,7 +539,7 @@ def find_median_pct_inc_after_transport_vs_dist(conn, lad_id, transport_type, la
             continue
         distance_df_grouped = distance_df.groupby(['lsoa_id', 'transport_index'])
         for idx, distance_df in distance_df_grouped: 
-            creation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
+            creation_year = pd.to_datetime(distance_df['creation_date']).dt.year
             median_before = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) < creation_year]['price'].values)
             median_after = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) >= creation_year]['price'].values)
             median_before = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) < creation_year]['price'].values)
@@ -556,9 +556,10 @@ def find_median_pct_inc_after_transport_vs_car_ava(conn, lad_id, transport_gdf, 
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT {num_lsoas}")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
-    transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
+    transport_lad = find_transport_lad_id_sql(conn, lad_id, lad_boundaries, transport_type)
     if transport_lad.empty: 
         return
+    transport_lad = gpd.GeoDataFrame(transport_lad, geometry = gpd.points_from_xy(transport_lad['longitude'], transport_lad['latitude']))
     for lsoa_id in lsoa_ids:
         # nearest transport facility to the lsoa
         distance_df = find_distance_to_closest_transport(conn, lsoa_id, transport_lad)
@@ -569,7 +570,7 @@ def find_median_pct_inc_after_transport_vs_car_ava(conn, lad_id, transport_gdf, 
         cur.execute(f"select * from car_availability_data where lsoa_id = '{lsoa_id}'")
         car_availability = cur.fetchall()[0]['no_car_proportion']
         for idx, distance_df in distance_df_grouped: 
-            creation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
+            creation_year = pd.to_datetime(distance_df['creation_date']).dt.year
             median_before = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) < creation_year]['price'].values)
             median_after = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) >= creation_year]['price'].values)
             median_before = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) < creation_year]['price'].values)
@@ -585,9 +586,10 @@ def find_median_pct_inc_after_transport_vs_travel_method(conn, lad_id, transport
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT {num_lsoas}")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
-    transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
+    transport_lad = find_transport_lad_id_sql(conn, lad_id, lad_boundaries, transport_type)
     if transport_lad.empty: 
         return
+    transport_lad = gpd.GeoDataFrame(transport_lad, geometry = gpd.points_from_xy(transport_lad['longitude'], transport_lad['latitude']))
     for lsoa_id in lsoa_ids:
         # nearest transport facility to the lsoa
         distance_df = find_distance_to_closest_transport(conn, lsoa_id, transport_lad)
@@ -598,7 +600,7 @@ def find_median_pct_inc_after_transport_vs_travel_method(conn, lad_id, transport
         cur.execute(f"select * from method_of_travel_data where lsoa_id = '{lsoa_id}'")
         transport_usage  = cur.fetchall()[0][transport_type]
         for idx, distance_df in distance_df_grouped: 
-            creation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
+            creation_year = pd.to_datetime(distance_df['creation_date']).dt.year
             median_before = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) < creation_year]['price'].values)
             median_after = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) >= creation_year]['price'].values)
             median_before = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) < creation_year]['price'].values)
@@ -613,9 +615,10 @@ def find_median_pct_inc_after_transport_vs_house_type(conn, lad_id, transport_gd
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT {num_lsoas}")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
-    transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
+    transport_lad = find_transport_lad_id_sql(conn, lad_id, lad_boundaries, transport_type)
     if transport_lad.empty: 
         return
+    transport_lad = gpd.GeoDataFrame(transport_lad, geometry = gpd.points_from_xy(transport_lad['longitude'], transport_lad['latitude']))
     for lsoa_id in lsoa_ids:
         # nearest transport facility to the lsoa
         distance_df = find_distance_to_closest_transport(conn, lsoa_id, transport_lad)
@@ -625,7 +628,7 @@ def find_median_pct_inc_after_transport_vs_house_type(conn, lad_id, transport_gd
         cur = conn.cursor(pymysql.cursors.DictCursor)
         cur.execute(f"select * from car_availability_data where lsoa_id = '{lsoa_id}'")
         for idx, distance_df in distance_df_grouped: 
-            creation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
+            creation_year = pd.to_datetime(distance_df['creation_date']).dt.year
             median_before = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) < creation_year]['price'].values)
             median_after = np.median(distance_df[(pd.to_datetime(distance_df['date_of_transfer']).dt.year) >= creation_year]['price'].values)
             pct_inc = (median_after - median_before)/median_before * 100
@@ -645,9 +648,10 @@ def find_yearly_pct_inc_after_transport(conn, lad_id, transport_gdf, transport_t
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"SELECT unique lsoa_id FROM oa_translation_data where lad_id = '{lad_id}' ORDER BY RAND() LIMIT {num_lsoas}")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
-    transport_lad = find_transport_lad_id(transport_gdf, transport_type, lad_id, lad_boundaries)
+    transport_lad = find_transport_lad_id_sql(conn, lad_id, lad_boundaries, transport_type)
     if transport_lad.empty: 
         return
+    transport_lad = gpd.GeoDataFrame(transport_lad, geometry = gpd.points_from_xy(transport_lad['longitude'], transport_lad['latitude']))
     years_after_creation_vals = np.array([])
     pct_change_vals = np.array([])
     for lsoa_id in lsoa_ids:
@@ -658,7 +662,7 @@ def find_yearly_pct_inc_after_transport(conn, lad_id, transport_gdf, transport_t
                 continue
             distance_df_grouped = distance_df.groupby(['lsoa_id', 'transport_index'])
             for idx, distance_df in distance_df_grouped: 
-                creation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
+                creation_year = pd.to_datetime(distance_df['creation_date']).dt.year
                 distance_df_after = distance_df[pd.to_datetime(distance_df['date_of_transfer']).dt.year >= creation_year]
                 distance_df_after['years_after_creation'] = pd.to_datetime(distance_df['date_of_transfer']).dt.year  - creation_year
                 
@@ -825,7 +829,7 @@ def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundarie
             transport_usage = census_results[transport_type]
             car_availability = census_results['no_car_proportion']
             for idx, distance_df in distance_df_grouped: 
-                creation_year = pd.to_datetime(distance_df['CreationDateTime']).dt.year
+                creation_year = pd.to_datetime(distance_df['creation_date']).dt.year
                 distance_df_after = distance_df[pd.to_datetime(distance_df['date_of_transfer']).dt.year >= creation_year]
                 distance_df_after['years_after_creation'] = pd.to_datetime(distance_df['date_of_transfer']).dt.year  - creation_year
                 avg_dist = np.mean(distance_df['distance'].values)
@@ -845,6 +849,7 @@ def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundarie
         'avg_dist': avg_dists
         })
     return features_df
+
 def compute_pairwise_distances(house_gdf, transport_gdf):
     # Extract coordinates as numpy arrays
     coords1 = house_gdf.geometry.apply(lambda geom: (geom.x, geom.y)).to_list()
@@ -864,17 +869,11 @@ def find_closest_points(distance_df):
     closest_df = distance_df.loc[distance_df.groupby('house_index')['distance'].idxmin()].reset_index(drop=True)
     return closest_df
 
-def find_transport_lsoa(lsoa_id, transport_df, transport_type, lsoa_boundaries): 
-    lad_row = lsoa_boundaries[lsoa_boundaries['LSOA21CD'] == lsoa_id]
-    lad_gdf = gpd.GeoDataFrame({'geometry': lad_row.geometry})
-    return find_transport_bbox(transport_df, lad_gdf, transport_type)
-
 def find_transport_lsoa_sql(conn, lsoa_id, transport_type): 
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"select * from transport_node_data where lsoa_id = '{lsoa_id}' and stop_type = '{transport_type}'")
     lsoa_transport = cur.fetchall()
     return pd.DataFrame(lsoa_transport)
-
 
 def find_transaction_lsoa(connection, lsoa_id):
     cur = connection.cursor(pymysql.cursors.DictCursor)
