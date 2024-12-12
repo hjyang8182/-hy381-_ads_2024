@@ -9,6 +9,7 @@ import pandas as pd
 from shapely.geometry import Point, Polygon
 import pymysql
 import geopandas as gpd
+import plotly.express as px
 import seaborn as sns
 from geopy.distance import geodesic
 import ast
@@ -890,14 +891,31 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs,
 
     transport_lsoa = find_transport_lsoa_sql(connection, lsoa_id, transport_type)
     transport_nodes_coords = list(map(lambda n: (n['longitude'], n['latitude']), transport_lsoa))
+    transport_gdf = gpd.GeoDataFrame(   
+        geometry=gpd.points_from_xy(*zip(*transport_nodes_coords)),
+        crs=houses_lsoa.crs
+    )
+    fig = px.scatter_mapbox(
+        houses_lsoa, 
+        lat=houses_lsoa.geometry.y, 
+        lon=houses_lsoa.geometry.x,
+        color=houses_lsoa['clusters'].astype(str), 
+        size=houses_lsoa['log_price'],             
+        title=f"Houses in {lsoa_name}: Clusters and Prices",
+        mapbox_style="carto-positron",
+        opacity=0.7
+    )
 
-    fig, ax = plt.subplots(1, 2, figsize = (12,12))
-    houses_lsoa.plot(column = 'clusters', ax = ax[0], legend = True, cmap = 'tab20')
-    houses_lsoa.plot(column = 'price_log', ax = ax[1], legend = True, cmap = 'YlOrRd')
-    for coord in transport_nodes_coords:
-        ax[0].scatter(coord[0], coord[1], color = 'red')
-    ax[0].set_title(f"Clusters for houses in {lsoa_name}")
-    ax[1].set_title(f"Prices and Transport Nodes for Houses in {lsoa_name}")
+    # Add transport nodes as a separate layer
+    fig.add_scattermapbox(
+        lat=transport_gdf.geometry.y,
+        lon=transport_gdf.geometry.x,
+        mode='markers',
+        marker=dict(size=10, color='red'),
+        name="Transport Nodes"
+    )
+
+    fig.show()
 
 def find_median_house_price_change_over_time(conn, lad_id):
     median_house_price = []
