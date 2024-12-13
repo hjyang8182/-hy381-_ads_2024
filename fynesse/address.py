@@ -113,7 +113,7 @@ def find_oa(connection, latitude, longitude):
 def find_all_oa_student_features(conn, oa_id): 
     cur = conn.cursor(pymysql.cursors.DictCursor)
     query = f"""
-    select poi_count.*, ns.L15 from oa_poi_count_data as poi_count inner join ns_sec_boundary_data as ns on poi_count.oa_id = ns.oa_id where poi_count.oa_id = '{oa_id}'
+    select * from l15_poi_data where oa_id = '{oa_id}'
     """
     cur.execute(query)
     all_poi_data = cur.fetchall()

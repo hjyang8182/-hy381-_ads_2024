@@ -283,3 +283,20 @@ def insert_airport_data(conn, aeroways_merged):
     """
     cur.execute(query)
     conn.commit()
+
+def upload_building_residential_data(conn, file): 
+  fname = file.replace('.geojson', '')
+  building_gdf = gpd.read_file(file)
+  print(f"Opened {file}")
+  building_gdf['geometry_wkt'] = building_gdf['geometry'].apply(lambda x: x.wkt)
+  building_gdf = building_gdf.drop(columns = 'geometry')
+  building_gdf_csv = building_gdf[['addr:street', 'addr:housenumber', 'geometry_wkt', 'oa_id', 'lsoa_id']]
+  cur = conn.cursor()
+  insert_query = f"""
+  INSERT INTO building_residential_data (`addr:street`, `addr:housenumber`, geometry, oa_id, lsoa_id)  
+  VALUES (%s, %s, ST_GeomFromText(%s), %s, %s)
+  """
+  building_gdf_rows = list(map(tuple, building_gdf_csv.values))
+  cur.executemany(insert_query, building_gdf_rows)
+  conn.commit()
+  print(f"Done with {file}")
