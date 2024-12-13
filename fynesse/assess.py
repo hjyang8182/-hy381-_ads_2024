@@ -439,7 +439,7 @@ def find_residential_buildings_sql(conn, lad_id):
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
     buildings = []
     for lsoa_id in lsoa_ids: 
-        cur.execute(f"select `addr:street`, `addr:housenumber`, ST_AsText(geometry) as geom_wkt, oa_id, lsoa_id) from building_residential_data where lsoa_id = {lsoa_id}")
+        cur.execute(f"select `addr:street`, `addr:housenumber`, ST_AsText(geometry) as geom_wkt, oa_id, lsoa_id) from building_residential_data where lsoa_id = '{lsoa_id}'")
         building_df = pd.DataFrame(cur.fetchall())
         building_df['geometry'] = building_df['geom_wkt'].apply(wkt.loads)
         building_gdf = pd.GeoDataFrame(building_df, geometry = 'geometry')
