@@ -897,8 +897,8 @@ def plot_house_price_changes_lsoa(connection, lsoa_id, transport_df):
     houses_df = find_transaction_lsoa(connection, lsoa_id)
     if houses_df.empty:
         return
-    transport_df['CreationDateTime'] = pd.to_datetime(transport_df['CreationDateTime'])
-    creation_dates = np.unique(transport_df['CreationDateTime'].values)
+    transport_df['creation_date'] = pd.to_datetime(transport_df['creation_date'])
+    creation_dates = np.unique(transport_df['creation_date'].values)
     house_groups = houses_df.groupby(['street','primary_addressable_object_name', 'secondary_addressable_object_name'])[['price', 'date_of_transfer', 'oa_id']]
     same_houses = {}
     for address, group in house_groups: 
@@ -1092,7 +1092,7 @@ def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_type, lad_b
         plt.ylabel("Median Price of Houses in LSOA")
         plt.title(f"Median House Price of LSOAs in {lad_name}")
     transport_df = find_transport_lad_id_sql(conn, lad_id, lad_boundaries, transport_type)
-    creation_years = transport_df.CreationDateTime.dt.year.values
+    creation_years = transport_df.creation_date.dt.year.values
     for year in creation_years: 
         if year >= 2000:
             plt.axvline(x = year, linestyle = '--', color = 'red', label = f'Creation Date of {transport_type}')
