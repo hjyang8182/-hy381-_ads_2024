@@ -137,6 +137,14 @@ def get_poi_gdf(latitude, longitude, tags, distance_km = 1):
     return pois 
 
 def get_prices_coordinates_from_coords(conn, bbox): 
+    """
+    Count Points of Interest (POIs) near a given pair of coordinates within a specified distance.
+    Args:
+        conn: pymysql connection object
+        bbox: (west, south, east, north) coordinates of a bounding box
+    Returns:
+        dataframe containing price_coordinates_data of houses within the bounding box
+    """
     cur = conn.cursor(pymysql.cursors.DictCursor)
     west, south, east, north = bbox
     query = f"SELECT * FROM `prices_coordinates_data` where latitude BETWEEN {south} and {north} and longitude BETWEEN {west} and {east} and date_of_transfer >= '2020-01-01'"
@@ -205,8 +213,13 @@ def plot_corr_matrix(data_df):
 # TASK 1. PREDICT STUDENT POPULATION   
 def find_all_poi_counts(poi_dfs, oa_poi_df, tags): 
     """
-        Given a list of POI gdfs with the OA boundary gdf, find the number of POIs that is within an OA boundary
-        param: poi_dfs - list of osm node gdfs with index = 'OA21CD'
+    Given a list of POI gdfs with the OA boundary gdf, find the number of POIs that is within an OA boundary
+    Args:
+        poi_dfs: dataframe containing OSM POI data
+        oa_poi_df: geodataframe containing OA boundary data
+        tags: OSM tags
+    Returns:
+        all_poi_counts: dataframe containing number of POI counts for each OA in oa_poi_df and tag specified in tags
     """
     poi_counts = []
     for i in range(len(poi_dfs)):

@@ -242,9 +242,9 @@ def fit_final_model(conn, lad_ids, transport_type, lad_boundaries, num_lsoas):
     return all_features, results_linear_tube
 
 def get_test_features(conn, lad_ids, transport_type, lad_boundaries, num_lsoas):
-    rail_test_features_dfs = []
+    test_features_dfs = []
     for lad_id in lad_ids: 
         feature_df = find_all_features_with_house_types(conn, lad_id, transport_type, lad_boundaries, num_lsoas)
-        rail_test_features_dfs.append(feature_df) 
-    rail_test_features_df = pd.concat(rail_test_features_dfs)
+        test_features_dfs.append(feature_df) 
+    rail_test_features_df = pd.concat(test_features_dfs)
     return rail_test_features_df
