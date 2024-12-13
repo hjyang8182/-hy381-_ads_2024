@@ -442,7 +442,7 @@ def find_residential_buildings_sql(conn, lad_id):
         cur.execute(f"select `addr:street`, `addr:housenumber`, ST_AsText(geometry) as geom_wkt, oa_id, lsoa_id from building_residential_data where lsoa_id = '{lsoa_id}'")
         building_df = pd.DataFrame(cur.fetchall())
         building_df['geometry'] = building_df['geom_wkt'].apply(wkt.loads)
-        building_gdf = pd.GeoDataFrame(building_df, geometry = 'geometry')
+        building_gdf = gpd.GeoDataFrame(building_df, geometry = 'geometry')
         building_gdf.set_crs('epsg:4326', inplace = True)
         buildings.append(building_gdf)
     all_buildings_df = pd.concat(buildings)
