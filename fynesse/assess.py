@@ -1122,4 +1122,27 @@ def find_median_house_price_change_over_time(conn, lad_id):
             median_house_price.append(year_dict)
     median_house_price_df = pd.DataFrame(median_house_price)
     median_house_price_df['pct_change'] = median_house_price_df['median_price'].pct_change() * 100 
-    return median_house_price_
+    return median_house_price_df
+
+def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_type, lad_boundaries):
+    median_house_price_df = find_median_house_price_change_over_time(conn, lad_id)
+    grouped_by_lsoa = median_house_price_df.groupby('lsoa_id')
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    cur.execute(f"select lad_name from oa_translation_data where lad_id = '{lad_id}'")
+    lad_name = cur.fetchall()[0]['lad_name']
+    num_lsoas = min(len(grouped_by_lsoa), 10)
+    for lsoa_id, group in itertools.islice(grouped_by_lsoa, num_lsoas): 
+        group = group.sort_values(by = 'year')
+        years = group['year'].values
+        median_prices = group['median_price'].values
+        plt.plot(years, median_prices, label = lsoa_id)
+        plt.xlabel("Year")
+        plt.ylabel("Median Price of Houses in LSOA")
+        plt.title(f"Median House Price of LSOAs in {lad_name}")
+    transport_df = find_transport_lad_id_sql(conn, lad_id, lad_boundaries, transport_type)
+    creation_years = pd.to_datetime(transport_df.creation_date).dt.year.values
+    creation_years = np.unique(creation_years)
+    for year in creation_years: 
+        if year >= 2000:
+            plt.axvline(x = year, linestyle = '--', color = 'red', label = f'Creation Date of {transport_type}')
+    plt.legend(fontsize=8, loc='center left', bbox_to_anchor=(1, 0.5), framealpha=0.5)  
