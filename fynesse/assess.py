@@ -803,13 +803,13 @@ def find_all_features_with_house_types(conn, lad_id, transport_type, lad_boundar
     car_availability_vals = []
     avg_dists =  []
 
-    D_vals = []  # For 'D' column
-    S_vals = []  # For 'S' column
-    T_vals = []  # For 'T' column
-    F_vals = []  # For 'F' column
-    O_vals = []  # For 'O' column
-    Y_vals = []  # For 'Y' column
-    N_vals = []  # For 'N' column
+    D_vals = []  
+    S_vals = []  
+    T_vals = [] 
+    F_vals = [] 
+    O_vals = []  
+    Y_vals = []  
+    N_vals = [] 
 
     for lsoa_id in lsoa_ids:
         with warnings.catch_warnings():
@@ -918,13 +918,10 @@ def find_all_features(conn, lad_id, transport_gdf, transport_type, lad_boundarie
     return features_df
 
 def compute_pairwise_distances(house_gdf, transport_gdf):
-    # Extract coordinates as numpy arrays
     coords1 = house_gdf.geometry.apply(lambda geom: (geom.x, geom.y)).to_list()
     coords2 = transport_gdf.geometry.apply(lambda geom: (geom.centroid.x, geom.centroid.y)).to_list()
-    # Compute pairwise distances using scipy
     distances = cdist(coords1, coords2, metric='euclidean')
 
-    # Flatten to DataFrame
     distance_df = pd.DataFrame(
         [(i, j, distances[i, j]) for i in range(len(coords1)) for j in range(len(coords2))],
         columns=['house_index', 'transport_index', 'distance']
@@ -932,7 +929,6 @@ def compute_pairwise_distances(house_gdf, transport_gdf):
     return distance_df
 
 def find_closest_points(distance_df):
-    # Find the closest point in gdf2 for each point in gdf1
     closest_df = distance_df.loc[distance_df.groupby('house_index')['distance'].idxmin()].reset_index(drop=True)
     return closest_df
 
@@ -984,7 +980,7 @@ def plot_house_price_changes_lsoa(connection, lsoa_id, transport_df):
                 axs[i, j].axvline(x= date, color='red', linestyle='--', linewidth=1.5, label = 'Creation Date of Transport Facility')
         axs[i, j].xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
         for tick in axs[i, j].get_xticklabels():
-            tick.set_rotation(45)  # Rotate tick labels by 45 degrees
+            tick.set_rotation(45)   
         axs[i,j].legend()
     fig.suptitle(f"House Price Trends Over Time in {lsoa_id}")
     plt.tight_layout()
@@ -1045,14 +1041,12 @@ def get_lsoa_house_clusters(houses_lsoa):
     clustering = AgglomerativeClustering(linkage='ward')
     labels = clustering.fit_predict(features)
 
-    # Dendrogram (to visualize the hierarchical structure)
     linkage_matrix = sch.linkage(features, method='ward')
     # plt.figure(figsize=(10, 7))
     # sch.dendrogram(linkage_matrix)
     # plt.show()
     y_threshold = 20 # Cut the dendrogram at y = 5
 
-    # Get the cluster labels for each data point by cutting at the threshold
     clusters = sch.fcluster(linkage_matrix, t=y_threshold, criterion='distance')
     return clusters
 
@@ -1079,22 +1073,20 @@ def plot_prices_and_clusters(connection, lsoa_id, lsoa_boundaries, building_dfs,
     )
     fig, ax = plt.subplots()
     price_min, price_max = houses_lsoa['log_price'].min(), houses_lsoa['log_price'].max()
-    size_factor = 100  # Adjust this to control the size scaling
+    size_factor = 100 
     scatter = ax.scatter(
         houses_lsoa.geometry.x, 
         houses_lsoa.geometry.y, 
         c=houses_lsoa['clusters'], 
         s=(houses_lsoa['log_price'] - price_min) / (price_max - price_min) * size_factor, 
-        cmap='tab20',  # Color map for clusters
-        alpha=0.7,     # Transparency of the dots
-        edgecolors='w', # White edge for better contrast
+        cmap='tab20',
+        alpha=0.7,   
+        edgecolors='w', 
         label='Houses'
     )
 
-    # Add a colorbar for the clusters
     plt.colorbar(scatter, ax=ax, label='Cluster ID')
 
-    # Plot transport nodes
     ax.scatter(
         transport_gdf.geometry.x, 
         transport_gdf.geometry.y, 
@@ -1130,27 +1122,4 @@ def find_median_house_price_change_over_time(conn, lad_id):
             median_house_price.append(year_dict)
     median_house_price_df = pd.DataFrame(median_house_price)
     median_house_price_df['pct_change'] = median_house_price_df['median_price'].pct_change() * 100 
-    return median_house_price_df
-
-def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_type, lad_boundaries):
-    median_house_price_df = find_median_house_price_change_over_time(conn, lad_id)
-    grouped_by_lsoa = median_house_price_df.groupby('lsoa_id')
-    cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur.execute(f"select lad_name from oa_translation_data where lad_id = '{lad_id}'")
-    lad_name = cur.fetchall()[0]['lad_name']
-    num_lsoas = min(len(grouped_by_lsoa), 10)
-    for lsoa_id, group in itertools.islice(grouped_by_lsoa, num_lsoas): 
-        group = group.sort_values(by = 'year')
-        years = group['year'].values
-        median_prices = group['median_price'].values
-        plt.plot(years, median_prices, label = lsoa_id)
-        plt.xlabel("Year")
-        plt.ylabel("Median Price of Houses in LSOA")
-        plt.title(f"Median House Price of LSOAs in {lad_name}")
-    transport_df = find_transport_lad_id_sql(conn, lad_id, lad_boundaries, transport_type)
-    creation_years = pd.to_datetime(transport_df.creation_date).dt.year.values
-    creation_years = np.unique(creation_years)
-    for year in creation_years: 
-        if year >= 2000:
-            plt.axvline(x = year, linestyle = '--', color = 'red', label = f'Creation Date of {transport_type}')
-    plt.legend(fontsize=8, loc='center left', bbox_to_anchor=(1, 0.5), framealpha=0.5)  
+    return median_house_price_

@@ -248,3 +248,12 @@ def get_test_features(conn, lad_ids, transport_type, lad_boundaries, num_lsoas):
         test_features_dfs.append(feature_df) 
     rail_test_features_df = pd.concat(test_features_dfs)
     return rail_test_features_df
+
+
+def make_prediction(conn, lad_to_region, input_feature, transport_type, lad_boundaries, num_lads, num_lsoas):
+    lad_to_region_by_rgn = lad_to_region.groupby('RGN21CD')['LAD21CD'].sample(n=num_lads)
+    random_lads = lad_to_region_by_rgn.values
+    all_features, result_linear = fit_final_model(conn, random_lads, transport_type, lad_boundaries, num_lsoas)
+    params = result_linear.params
+    pred = np.sum(params * input_feature)
+    return pred
