@@ -343,12 +343,30 @@ def find_transport_bbox_sql(conn, bbox, transport_type):
     transport_gdf = gpd.GeoDataFrame(query_results, geometry = gpd.points_from_xy(query_results['longitude'], query_results['latitude']))
     return transport_gdf
 
-def find_transaction_lad_id(conn, lad_id, lad_boundaries): 
-    lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
-    lad_bbox = lad_row.bbox.values[0]
-    return find_transaction_bbox_after_2020(conn, lad_bbox)
+# def find_transaction_lad_id(conn, lad_id, lad_boundaries): 
+#     """
+#     Returns all transactions within a LAD
+#     Args:
+#         conn: pymysql connection object
+#         lad_id: id of the LAD that is being queried
+#         lad_boundaries: gdf containing the boundaries of LAD 
+#     Returns:
+#         df containing the transactions within the LAD
+#     """
+#     lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
+#     lad_bbox = lad_row.bbox.values[0]
+#     return find_transaction_bbox_after_2020(conn, lad_bbox)
 
 def find_transport_lad_id_sql(conn, lad_id, lad_boundaries, transport_type): 
+    """Returns all transactions within a LAD
+    Args:
+        conn: pymysql connection object
+        lad_id: id of the LAD that is being queried
+        lad_boundaries: gdf containing the boundaries of LAD 
+        transport_type: type of transport node 
+    Returns:
+        df containing the transactions within the LAD
+    """
     lad_row = lad_boundaries[lad_boundaries['LAD21CD'] == lad_id]
     lad_bbox = lad_row.bbox.values[0]
     return find_transport_bbox_sql(conn, lad_bbox, transport_type)
@@ -369,6 +387,14 @@ def find_transaction_bbox_after_2020(conn, bbox):
     return transaction_df
 
 def find_all_transactions_bbox(conn, bbox): 
+    """
+    Returns all transactions within a bbox
+    Args:
+        conn: pymysql connection object
+        bbox: coordinates in the form (west, south, east, north) of the bounding box
+    Returns:
+        df containing the transactions for houses located within the bounding box
+    """
     west, south, east, north = bbox
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"select * from prices_coordinates_oa_data where latitude between {south} and {north} and longitude between {west} and {east} and date_of_transfer >= 2020-01-01")
@@ -400,6 +426,14 @@ def find_residential_buildings(conn, lad_id, building_dfs):
     return buildings_gdf
 
 def find_residential_buildings_sql(conn, lad_id): 
+    """
+    Returns all building=residential OSM POIs within a LAD
+    Args:
+        conn: pymysql connection object
+        lad_id: id of the LAD that is being queried
+    Returns:
+        all_buildings_gdf: gdf containing all the building=residential POIs 
+    """
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute(f"select unique lsoa_id from oa_translation_data where lad_id = '{lad_id}'")
     lsoa_ids = list(map(lambda x : x['lsoa_id'], cur.fetchall()))
@@ -416,6 +450,15 @@ def find_residential_buildings_sql(conn, lad_id):
     return all_buildings_gdf
 
 def find_joined_osm_transaction_data_lsoa(conn, lsoa_id, building_dfs): 
+    """
+    Joins transaction data with OSM data 
+    Args:
+        conn: pymysql connection object
+        lsoa_id: id of the LSOA that is being queried
+        building_dfs: gdf containing building=residential POIs
+    Returns:
+        all_buildings_gdf: gdf containing the transaction data joined with the buillding_dfs on address and location
+    """
     buildings = []
     for i in range(len(building_dfs)): 
         building_df = building_dfs[i]
@@ -1106,6 +1149,7 @@ def plot_median_house_price_over_time_in_lad(conn, lad_id, transport_type, lad_b
         plt.title(f"Median House Price of LSOAs in {lad_name}")
     transport_df = find_transport_lad_id_sql(conn, lad_id, lad_boundaries, transport_type)
     creation_years = pd.to_datetime(transport_df.creation_date).dt.year.values
+    creation_years = np.unique(creation_years)
     for year in creation_years: 
         if year >= 2000:
             plt.axvline(x = year, linestyle = '--', color = 'red', label = f'Creation Date of {transport_type}')
